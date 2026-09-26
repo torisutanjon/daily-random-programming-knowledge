@@ -1,8 +1,9 @@
-# Daily Random Programming Knowledge — Design Spec
+# drpk (Daily Random Programming Knowledge) — Design Spec
 
 - **Date:** 2026-09-26
 - **Status:** Draft, awaiting review
 - **Repo:** https://github.com/torisutanjon/daily-random-programming-knowledge
+- **App name:** drpk — used for the window title, heading, notifications, package name, and data folder
 
 ## 1. Purpose
 
@@ -90,7 +91,7 @@ Electron main (desktop concerns only)   Next.js server (all app logic)
 
 ## 6. Data model
 
-Stored under the Electron `userData` dir (e.g. `%APPDATA%\daily-random-programming-knowledge\`); in plain-browser dev mode, under a `DATA_DIR` env var (default `./.data`).
+Stored under the Electron `userData` dir (e.g. `%APPDATA%\drpk\`); in plain-browser dev mode, under a `DATA_DIR` env var (default `./.data`).
 
 - `settings.json`
 - `words/<dayKey>.json` — one file per word
