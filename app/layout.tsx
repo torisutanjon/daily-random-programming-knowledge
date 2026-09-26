@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "A daily programming word to research, with questions to prove you learned it.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
