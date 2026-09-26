@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-A personal Windows desktop app that gives Tristan one programming "word of the day" (a concept, technique, or technology) and a short checklist of topics to research about it. Each topic carries one or two questions that Tristan answers in his own words; an LLM grades the answers. The goal is a **roadmap from mid-level to senior developer**, tailored to his stack, where progress means *demonstrably understanding* each word — not trivia.
+A personal Windows desktop app that gives Tristan one programming "word of the day" (a concept, technique, or technology) and a short checklist of topics to research about it. Each topic carries one or two questions that Tristan answers in their own words; an LLM grades the answers. The goal is a **roadmap from mid-level to senior developer**, tailored to Tristan's stack, where progress means *demonstrably understanding* each word — not trivia.
 
 ### Success criteria
 
