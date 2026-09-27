@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored Claude Design export (visual reference, not app code):
+    "docs/design/**",
   ]),
 ]);
 

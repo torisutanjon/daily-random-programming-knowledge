@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#1f1f22;color:#dcdcdf;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.76 0.12 290);text-decoration:none}a:hover{color:oklch(0.84 0.1 290);text-decoration:underline}
+textarea::placeholder,input::placeholder{color:#6b6b74}
+@keyframes drpk-spin{to{transform:rotate(360deg)}}
+@keyframes drpk-pulse{0%,100%{opacity:.45}50%{opacity:.9}}
+</style>
+</helmet>
+<div style="height:100vh;min-height:640px;display:flex;flex-direction:column;background:#1f1f22;overflow:hidden">
+
+  <div style="height:38px;flex:none;display:flex;align-items:stretch;background:#151517;border-bottom:1px solid #2a2a2f;font-size:12px;color:#a3a3ab">
+    <div style="width:232px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;box-sizing:border-box">
+      <span style="width:10px;height:10px;border-radius:3px;background:oklch(0.72 0.12 290)"></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:500;color:#dcdcdf;letter-spacing:.02em">drpk</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;padding-left:8px">
+      <div style="height:30px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#1f1f22;border:1px solid #2a2a2f;border-bottom:none;border-radius:7px 7px 0 0;color:#dcdcdf;margin-bottom:-1px">{{ tabTitle }}</div>
+    </div>
+    <div style="flex:1"></div>
+    <sc-if value="{{ demo }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;padding-right:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;padding:3px 8px;border-radius:4px;background:oklch(0.8 0.11 80 / 0.14);color:oklch(0.84 0.1 80)">DEMO MODE</span></div>
+    </sc-if>
+    <div style="display:flex;align-items:stretch;font-size:13px">
+      <span style="width:46px;display:flex;align-items:center;justify-content:center">–</span>
+      <span style="width:46px;display:flex;align-items:center;justify-content:center">▢</span>
+      <span style="width:46px;display:flex;align-items:center;justify-content:center" style-hover="background:#c42b1c;color:#fff">✕</span>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <div style="width:232px;flex:none;background:#1a1a1d;border-right:1px solid #2a2a2f;display:flex;flex-direction:column;padding:14px 10px;box-sizing:border-box;gap:2px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3">
+        <div onClick="{{ n.go }}" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:6px;font-size:14px;cursor:default;background:{{ n.bg }};color:{{ n.color }}" style-hover="background:#26262a;color:#dcdcdf">
+          <span>{{ n.label }}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#75757e">{{ n.count }}</span>
+        </div>
+      </sc-for>
+      <div style="flex:1"></div>
+      <div style="padding:12px 10px 4px;border-top:1px solid #2a2a2f;display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#75757e;text-transform:uppercase;letter-spacing:.08em">Next word</span>
+        <span style="font-size:13px;color:#a3a3ab">Tomorrow at {{ notifyTime }}</span>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;overflow:auto">
+
+      <sc-if value="{{ showWordScreen }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;height:40px;font-size:12.5px;color:#75757e;position:relative">
+          <sc-if value="{{ fromBacklog }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ goBacklog }}" style="position:absolute;left:20px;cursor:default;color:#a3a3ab" style-hover="color:#dcdcdf">← Backlog</span>
+          </sc-if>
+          <span>{{ crumb }}</span><span>/</span><span style="color:#a3a3ab">{{ crumbTerm }}</span>
+        </div>
+
+        <div style="max-width:720px;margin:0 auto;padding:36px 40px 120px;box-sizing:border-box">
+
+          <sc-if value="{{ showDemoNote }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:10px;align-items:baseline;padding:10px 14px;margin-bottom:28px;border-radius:6px;background:oklch(0.8 0.11 80 / 0.08);font-size:13.5px;color:#c9c9ce;line-height:1.5">
+              <span style="color:oklch(0.84 0.1 80);font-weight:500;flex:none">Demo mode</span>
+              <span>Sample content — answers are graded by a stub. <a href="#" onClick="{{ goSettings }}">Add an API key</a> to get real words.</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showGenerating }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e;margin-bottom:14px">{{ todayDate }}</div>
+            <div style="width:300px;max-width:100%;height:46px;border-radius:6px;background:#2a2a2f">{{ pulse }}</div>
+            <div style="display:flex;gap:8px;margin-top:18px">
+              <div style="width:150px;height:24px;border-radius:12px;background:#26262a"></div>
+              <div style="width:84px;height:24px;border-radius:12px;background:#26262a"></div>
+            </div>
+            <div style="margin-top:40px;padding:18px 20px;border:1px solid #2e2e33;border-radius:8px;display:flex;flex-direction:column;gap:12px;font-size:14px">
+              <div style="display:flex;align-items:center;gap:10px;color:#dcdcdf;font-weight:500">{{ spinner }}<span>Creating today's word</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757e;font-weight:400">usually 10–20 s</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;padding-left:22px;color:#a3a3ab">
+                <span>✓  Picked an area from your 15 selected</span>
+                <span style="color:#dcdcdf">·  Choosing a mid-senior term you haven't seen</span>
+                <span style="color:#75757e">·  Writing topics and questions</span>
+              </div>
+            </div>
+            <div style="margin-top:36px;display:flex;flex-direction:column;gap:14px">
+              <div style="height:14px;width:62%;border-radius:4px;background:#26262a"></div>
+              <div style="height:14px;width:48%;border-radius:4px;background:#26262a"></div>
+              <div style="height:14px;width:70%;border-radius:4px;background:#26262a"></div>
+              <div style="height:14px;width:54%;border-radius:4px;background:#26262a"></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e;margin-bottom:14px">{{ todayDate }}</div>
+            <div style="padding:22px 24px;border:1px solid #34343a;border-radius:8px;background:#232327;display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:17px;font-weight:600;color:#ececef">Couldn't create today's word</div>
+              <div style="font-size:14.5px;line-height:1.6;color:#b4b4bb">{{ errorMsg }}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e">{{ errorCode }}</div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <sc-if value="{{ isKeyError }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ goSettings }}" style="font:600 13px 'IBM Plex Sans',sans-serif;padding:8px 14px;border-radius:6px;border:none;background:oklch(0.72 0.12 290);color:#141416;cursor:pointer">Open Settings</button>
+                </sc-if>
+                <button onClick="{{ retry }}" style="font:500 13px 'IBM Plex Sans',sans-serif;padding:8px 14px;border-radius:6px;border:1px solid #3a3a40;background:#2a2a2f;color:#dcdcdf;cursor:pointer" style-hover="background:#303036">Retry</button>
+              </div>
+            </div>
+            <div style="margin-top:14px;font-size:13px;color:#75757e">Your backlog is unaffected — unfinished words are still there.</div>
+          </sc-if>
+
+          <sc-if value="{{ showWord }}" hint-placeholder-val="{{ true }}">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e;margin-bottom:12px">{{ w.date }}</div>
+            <h1 style="margin:0;font-size:46px;line-height:1.1;font-weight:600;letter-spacing:-0.02em;color:#f0f0f2;text-wrap:balance">{{ w.term }}</h1>
+            <div style="margin-top:8px;font-size:16px;color:#8e8e97">{{ w.full }}</div>
+
+            <div style="margin-top:28px;display:grid;grid-template-columns:110px 1fr;row-gap:12px;align-items:center;font-size:13.5px">
+              <span style="color:#75757e">area</span>
+              <div style="display:flex;gap:6px"><span style="padding:3px 10px;border-radius:12px;background:oklch(0.72 0.12 290 / 0.14);color:oklch(0.82 0.09 290)">{{ w.area }}</span></div>
+              <span style="color:#75757e">level</span>
+              <div style="display:flex;gap:6px"><span style="padding:3px 10px;border-radius:12px;background:#2a2a2f;color:#c9c9ce">{{ w.level }}</span></div>
+              <span style="color:#75757e">progress</span>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <span style="color:#dcdcdf">{{ w.progress }}</span>
+                <div style="display:flex;gap:3px">
+                  <sc-for list="{{ w.segs }}" as="s" hint-placeholder-count="10"><span style="width:14px;height:5px;border-radius:2px;background:{{ s.c }}"></span></sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:44px;display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid #2a2a2f">
+              <h2 style="margin:0;font-size:20px;font-weight:600;color:#ececef">Topics</h2>
+              <div style="display:flex;gap:14px;font-size:12px;color:#75757e">
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:oklch(0.76 0.11 155)"></span>learned</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;border:1.5px solid oklch(0.76 0.09 245);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:4px;height:4px;border-radius:50%;background:oklch(0.76 0.09 245)"></span></span>revealed</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;border:1.5px solid oklch(0.8 0.11 80);box-sizing:border-box"></span>in progress</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ w.topics }}" as="t" hint-placeholder-count="6">
+                <div style="border-bottom:1px solid #26262a">
+                  <div onClick="{{ t.onToggle }}" style="display:flex;align-items:center;gap:12px;padding:13px 6px;cursor:default;border-radius:6px" style-hover="background:#242428">
+                    <sc-if value="{{ t.isU }}" hint-placeholder-val="{{ true }}"><span style="width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid #55555d;box-sizing:border-box"></span></sc-if>
+                    <sc-if value="{{ t.isP }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid oklch(0.8 0.11 80);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:1.5px;background:oklch(0.8 0.11 80)"></span></span></sc-if>
+                    <sc-if value="{{ t.isL }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:oklch(0.76 0.11 155);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 10 10"><polyline points="2,5.2 4.2,7.2 8,2.8" fill="none" stroke="#18181b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span></sc-if>
+                    <sc-if value="{{ t.isR }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid oklch(0.76 0.09 245);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:50%;background:oklch(0.76 0.09 245)"></span></span></sc-if>
+                    <span style="flex:1;font-size:16px;line-height:1.4;color:{{ t.titleColor }}">{{ t.title }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757e">{{ t.meta }}</span>
+                    <span style="width:14px;text-align:center;color:#75757e;font-size:11px">{{ t.chev }}</span>
+                  </div>
+
+                  <sc-if value="{{ t.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin:0 0 20px 13px;padding:4px 0 4px 26px;border-left:1px solid #2e2e33;display:flex;flex-direction:column;gap:34px">
+                      <sc-for list="{{ t.qs }}" as="q" hint-placeholder-count="1">
+                        <div style="display:flex;flex-direction:column;gap:14px">
+                          <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+                            <span style="font-family:'JetBrains Mono',monospace;color:#75757e">{{ q.label }}</span>
+                            <span style="color:{{ q.statusColor }}">{{ q.statusLabel }}</span>
+                          </div>
+                          <div style="font-size:17px;line-height:1.6;color:#ececef;text-wrap:pretty;max-width:62ch">{{ q.prompt }}</div>
+
+                          <sc-if value="{{ q.hasAttempts }}" hint-placeholder-val="{{ false }}">
+                            <div style="display:flex;flex-direction:column;gap:10px">
+                              <sc-for list="{{ q.attempts }}" as="a" hint-placeholder-count="1">
+                                <div style="padding:14px 16px;border-radius:8px;background:#232327;display:flex;flex-direction:column;gap:10px">
+                                  <div style="display:flex;align-items:center;gap:10px">
+                                    <span style="font-size:12px;font-weight:500;padding:2px 9px;border-radius:10px;background:{{ a.vb }};color:{{ a.vc }}">{{ a.vl }}</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757e">attempt {{ a.n }} · {{ a.t }}</span>
+                                  </div>
+                                  <sc-if value="{{ a.hasText }}" hint-placeholder-val="{{ true }}">
+                                    <div style="font-size:14px;line-height:1.6;color:#8e8e97;white-space:pre-wrap">{{ a.text }}</div>
+                                  </sc-if>
+                                  <div style="font-size:15px;line-height:1.6;color:#d4d4d8;text-wrap:pretty">{{ a.fb }}</div>
+                                </div>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{ q.revealed }}" hint-placeholder-val="{{ false }}">
+                            <div style="padding:16px 18px;border-radius:8px;background:oklch(0.76 0.09 245 / 0.07);border:1px solid oklch(0.76 0.09 245 / 0.22);display:flex;flex-direction:column;gap:10px">
+                              <span style="font-size:12px;color:oklch(0.8 0.08 245);letter-spacing:.04em">MODEL ANSWER</span>
+                              <div style="font-size:15.5px;line-height:1.65;color:#dcdcdf;text-wrap:pretty">{{ q.answer }}</div>
+                              <span style="font-size:12px;color:#8e8e97;margin-top:4px">Key points</span>
+                              <div style="display:flex;flex-direction:column;gap:5px">
+                                <sc-for list="{{ q.keys }}" as="k" hint-placeholder-count="3">
+                                  <div style="display:flex;gap:10px;font-size:14.5px;line-height:1.5;color:#c9c9ce"><span style="color:oklch(0.76 0.09 245)">•</span><span>{{ k.x }}</span></div>
+                                </sc-for>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{ q.showComposer }}" hint-placeholder-val="{{ true }}">
+                            <div style="display:flex;flex-direction:column;gap:10px">
+                              <textarea value="{{ q.draft }}" onChange="{{ q.onInput }}" readOnly="{{ q.grading }}" rows="5" placeholder="Explain it in your own words…" style="width:100%;box-sizing:border-box;resize:vertical;min-height:124px;padding:12px 14px;border-radius:8px;border:1px solid #34343a;background:#1a1a1d;color:#e4e4e7;font:400 15px/1.65 'IBM Plex Sans',sans-serif;outline:none" style-focus="border-color:oklch(0.72 0.12 290 / 0.7)"></textarea>
+                              <sc-if value="{{ q.gradeError }}" hint-placeholder-val="{{ false }}">
+                                <div style="font-size:13.5px;color:oklch(0.78 0.1 25)">Couldn't grade — try again. Your answer is still here.</div>
+                              </sc-if>
+                              <div style="display:flex;align-items:center;gap:14px">
+                                <sc-if value="{{ q.canReveal }}" hint-placeholder-val="{{ true }}">
+                                  <span onClick="{{ q.onAsk }}" style="font-size:13px;color:#75757e;cursor:default" style-hover="color:#a3a3ab">Reveal answer</span>
+                                </sc-if>
+                                <span style="flex:1"></span>
+                                <sc-if value="{{ q.grading }}" hint-placeholder-val="{{ false }}">
+                                  <span style="font-size:13px;color:#8e8e97">Reading your answer…</span>
+                                </sc-if>
+                                <button onClick="{{ q.onSubmit }}" disabled="{{ q.submitDisabled }}" style="display:flex;align-items:center;gap:8px;font:600 13px 'IBM Plex Sans',sans-serif;padding:8px 16px;border-radius:6px;border:none;background:oklch(0.72 0.12 290);color:#141416;cursor:pointer;opacity:{{ q.submitOpacity }}">{{ q.btnSpin }}{{ q.submitLabel }}</button>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{ q.confirm }}" hint-placeholder-val="{{ false }}">
+                            <div style="padding:14px 16px;border-radius:8px;border:1px solid #3a3a40;background:#232327;display:flex;flex-direction:column;gap:12px">
+                              <div style="font-size:14.5px;line-height:1.55;color:#dcdcdf">Reveal the model answer? This question will be marked <span style="color:oklch(0.8 0.08 245)">revealed</span> rather than learned. You can still write your own answer afterwards.</div>
+                              <div style="display:flex;gap:8px;justify-content:flex-end">
+                                <button onClick="{{ q.onCancel }}" style="font:500 13px 'IBM Plex Sans',sans-serif;padding:7px 14px;border-radius:6px;border:1px solid #3a3a40;background:transparent;color:#c9c9ce;cursor:pointer">Keep trying</button>
+                                <button onClick="{{ q.onReveal }}" style="font:500 13px 'IBM Plex Sans',sans-serif;padding:7px 14px;border-radius:6px;border:none;background:oklch(0.76 0.09 245 / 0.18);color:oklch(0.84 0.07 245);cursor:pointer">Reveal answer</button>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{ q.showReopen }}" hint-placeholder-val="{{ false }}">
+                            <span onClick="{{ q.onReopen }}" style="font-size:13px;color:#75757e;cursor:default" style-hover="color:#a3a3ab">{{ q.reopenLabel }}</span>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBacklog }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:960px;margin:0 auto;padding:48px 40px 100px;box-sizing:border-box">
+          <h1 style="margin:0;font-size:32px;font-weight:600;letter-spacing:-0.01em;color:#f0f0f2">Backlog</h1>
+          <div style="margin-top:6px;font-size:14.5px;color:#8e8e97">Every past word. Unfinished ones wait here — nothing is lost.</div>
+          <div style="margin-top:32px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:40px;align-items:start">
+            <div>
+              <div style="display:flex;gap:4px;padding:3px;border-radius:7px;background:#1a1a1d;border:1px solid #2a2a2f;width:max-content">
+                <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+                  <span onClick="{{ f.go }}" style="font-size:13px;padding:5px 12px;border-radius:5px;cursor:default;background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</span>
+                </sc-for>
+              </div>
+              <sc-if value="{{ backlogEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:28px;padding:40px 28px;border:1px dashed #34343a;border-radius:8px;display:flex;flex-direction:column;gap:8px">
+                  <div style="font-size:16px;font-weight:500;color:#dcdcdf">{{ emptyTitle }}</div>
+                  <div style="font-size:14.5px;line-height:1.6;color:#8e8e97;max-width:52ch">{{ emptyBody }}</div>
+                </div>
+              </sc-if>
+              <div style="margin-top:16px;display:flex;flex-direction:column">
+                <sc-for list="{{ backlog }}" as="r" hint-placeholder-count="5">
+                  <div onClick="{{ r.open }}" style="display:grid;grid-template-columns:18px 76px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 10px;border-bottom:1px solid #26262a;border-radius:6px;cursor:default" style-hover="background:#242428">
+                    <sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;border-radius:4px;background:oklch(0.76 0.11 155);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 10 10"><polyline points="2,5.2 4.2,7.2 8,2.8" fill="none" stroke="#18181b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span></sc-if>
+                    <sc-if value="{{ r.started }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;box-sizing:border-box;border-radius:4px;border:1.5px solid oklch(0.8 0.11 80);display:flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:1.5px;background:oklch(0.8 0.11 80)"></span></span></sc-if>
+                    <sc-if value="{{ r.fresh }}" hint-placeholder-val="{{ true }}"><span style="width:16px;height:16px;box-sizing:border-box;border-radius:4px;border:1.5px solid #55555d"></span></sc-if>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e">{{ r.date }}</span>
+                    <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                      <span style="font-size:16px;color:#ececef">{{ r.term }}</span>
+                      <span style="font-size:13px;color:#8e8e97">{{ r.area }} · {{ r.level }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <div style="display:flex;gap:2px"><sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="4"><span style="width:8px;height:5px;border-radius:2px;background:{{ s.c }}"></span></sc-for></div>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#a3a3ab;min-width:34px;text-align:right">{{ r.progress }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="padding:18px 18px 20px;border:1px solid #2a2a2f;border-radius:8px;background:#1c1c1f">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <span style="font-size:14px;font-weight:600;color:#ececef">Coverage</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757e">{{ coverageSummary }}</span>
+              </div>
+              <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ coverage }}" as="c" hint-placeholder-count="16">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 56px 18px;gap:10px;align-items:center;font-size:12.5px">
+                    <span style="color:{{ c.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+                    <div style="height:5px;border-radius:3px;background:#2a2a2f;overflow:hidden"><div style="height:100%;border-radius:3px;background:oklch(0.72 0.12 290);width:{{ c.w }}"></div></div>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;text-align:right;color:{{ c.color }}">{{ c.count }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:14px;font-size:12px;line-height:1.5;color:#75757e">Faded areas are switched off in Settings.</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:760px;margin:0 auto;padding:48px 40px 100px;box-sizing:border-box">
+          <h1 style="margin:0 0 28px;font-size:32px;font-weight:600;letter-spacing:-0.01em;color:#f0f0f2">Settings</h1>
+
+          <div style="font-size:12px;color:#75757e;letter-spacing:.08em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid #2a2a2f">Daily word</div>
+          <div style="display:flex;align-items:center;gap:24px;padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="flex:1"><div style="font-size:15px;color:#ececef">Notify time</div><div style="font-size:13px;color:#8e8e97;margin-top:3px">A Windows notification announces the new word.</div></div>
+            <input type="time" value="{{ notifyTime }}" onChange="{{ onTime }}" style="font:400 14px 'JetBrains Mono',monospace;padding:7px 10px;border-radius:6px;border:1px solid #34343a;background:#1a1a1d;color:#e4e4e7;color-scheme:dark;outline:none">
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="flex:1"><div style="font-size:15px;color:#ececef">Level</div><div style="font-size:13px;color:#8e8e97;margin-top:3px">How deep the terms and questions go.</div></div>
+            <div style="display:flex;gap:3px;padding:3px;border-radius:7px;background:#1a1a1d;border:1px solid #2a2a2f">
+              <sc-for list="{{ levels }}" as="l" hint-placeholder-count="3">
+                <span onClick="{{ l.go }}" style="font-size:13px;padding:5px 12px;border-radius:5px;cursor:default;background:{{ l.bg }};color:{{ l.color }}">{{ l.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="display:flex;align-items:baseline;justify-content:space-between"><div style="font-size:15px;color:#ececef">Areas</div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#75757e">{{ areasOn }}</span></div>
+            <div style="font-size:13px;color:#8e8e97;margin-top:3px">Words are drawn from these.</div>
+            <div style="margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 20px">
+              <sc-for list="{{ areaOpts }}" as="o" hint-placeholder-count="16">
+                <div onClick="{{ o.toggle }}" style="display:flex;align-items:center;gap:10px;padding:6px 6px;border-radius:5px;cursor:default;font-size:14px;color:{{ o.color }}" style-hover="background:#242428">
+                  <sc-if value="{{ o.on }}" hint-placeholder-val="{{ true }}"><span style="width:15px;height:15px;flex:none;border-radius:4px;background:oklch(0.72 0.12 290);display:flex;align-items:center;justify-content:center"><svg width="9" height="9" viewBox="0 0 10 10"><polyline points="2,5.2 4.2,7.2 8,2.8" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span></sc-if>
+                  <sc-if value="{{ o.off }}" hint-placeholder-val="{{ false }}"><span style="width:15px;height:15px;flex:none;box-sizing:border-box;border-radius:4px;border:1.5px solid #55555d"></span></sc-if>
+                  <span>{{ o.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="font-size:15px;color:#ececef">Stack</div>
+            <div style="font-size:13px;color:#8e8e97;margin-top:3px">Examples and questions lean on these.</div>
+            <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <sc-for list="{{ tags }}" as="g" hint-placeholder-count="12">
+                <span style="display:flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;border-radius:12px;background:#2a2a2f;font-size:13px;color:#d4d4d8">{{ g.name }}<span onClick="{{ g.remove }}" style="width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8e8e97;cursor:default" style-hover="background:#3a3a40;color:#fff">✕</span></span>
+              </sc-for>
+              <input value="{{ newTag }}" onChange="{{ onNewTag }}" onKeyDown="{{ onTagKey }}" placeholder="Add… ⏎" style="width:90px;font:400 13px 'IBM Plex Sans',sans-serif;padding:4px 10px;border-radius:12px;border:1px dashed #3a3a40;background:transparent;color:#e4e4e7;outline:none">
+            </div>
+          </div>
+
+          <div style="margin-top:36px;font-size:12px;color:#75757e;letter-spacing:.08em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid #2a2a2f">AI grading</div>
+          <div style="padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="font-size:15px;color:#ececef">API key</div>
+            <div style="font-size:13px;color:#8e8e97;margin-top:3px">Stored locally. Without a key the app runs in demo mode.</div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <input type="password" value="{{ apiKey }}" onChange="{{ onKey }}" placeholder="sk-…" style="flex:1;min-width:0;font:400 14px 'JetBrains Mono',monospace;padding:8px 12px;border-radius:6px;border:1px solid #34343a;background:#1a1a1d;color:#e4e4e7;outline:none" style-focus="border-color:oklch(0.72 0.12 290 / 0.7)">
+              <button onClick="{{ testKey }}" style="display:flex;align-items:center;gap:8px;font:500 13px 'IBM Plex Sans',sans-serif;padding:8px 14px;border-radius:6px;border:1px solid #3a3a40;background:#2a2a2f;color:#dcdcdf;cursor:pointer" style-hover="background:#303036">{{ keySpin }}Test key</button>
+            </div>
+            <sc-if value="{{ keyOk }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;font-size:13.5px;color:oklch(0.78 0.11 155)">✓  Key works — model responded in 0.8 s.</div></sc-if>
+            <sc-if value="{{ keyErr }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;font-size:13.5px;color:oklch(0.78 0.1 25)">Key rejected (401 Unauthorized). Check it was copied in full.</div></sc-if>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="flex:1"><div style="font-size:15px;color:#ececef">Model</div><div style="font-size:13px;color:#8e8e97;margin-top:3px">Used for generating words and grading.</div></div>
+            <select value="{{ model }}" onChange="{{ onModel }}" style="font:400 13.5px 'JetBrains Mono',monospace;padding:7px 10px;border-radius:6px;border:1px solid #34343a;background:#1a1a1d;color:#e4e4e7;color-scheme:dark;outline:none">
+              <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+              <option value="claude-opus-4-1">claude-opus-4-1</option>
+              <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+            </select>
+          </div>
+
+          <div style="margin-top:36px;font-size:12px;color:#75757e;letter-spacing:.08em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid #2a2a2f">App</div>
+          <div style="display:flex;align-items:center;gap:24px;padding:18px 0;border-bottom:1px solid #26262a">
+            <div style="flex:1"><div style="font-size:15px;color:#ececef">Launch at login</div><div style="font-size:13px;color:#8e8e97;margin-top:3px">Starts quietly in the system tray.</div></div>
+            <div onClick="{{ toggleLaunch }}" style="width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;background:{{ launchBg }}"><span style="position:absolute;top:2px;width:16px;height:16px;border-radius:8px;background:#f0f0f2;left:{{ launchKnob }}"></span></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="width:272px;flex:none;background:#1a1a1d;border-left:1px solid #2a2a2f;display:flex;flex-direction:column;min-height:0">
+      <div style="flex:1;min-height:0;overflow:auto;padding:18px 14px">
+        <div style="font-size:11px;color:#75757e;text-transform:uppercase;letter-spacing:.08em;padding:0 8px 10px">Unfinished</div>
+        <sc-if value="{{ noUnfinished }}" hint-placeholder-val="{{ false }}"><div style="padding:4px 8px;font-size:13px;color:#75757e">Nothing waiting.</div></sc-if>
+        <sc-for list="{{ unfinished }}" as="u" hint-placeholder-count="3">
+          <div onClick="{{ u.open }}" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 8px;border-radius:6px;cursor:default;background:{{ u.bg }}" style-hover="background:#26262a">
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;color:#dcdcdf">{{ u.term }}</span><span style="font-size:12px;color:#75757e">{{ u.when }}</span></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#8e8e97">{{ u.progress }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:18px 14px;border-top:1px solid #2a2a2f">
+        <div style="font-size:11px;color:#75757e;text-transform:uppercase;letter-spacing:.08em;padding:0 8px 10px">Log</div>
+        <sc-if value="{{ noLog }}" hint-placeholder-val="{{ false }}"><div style="padding:4px 8px;font-size:13px;color:#75757e">No answers yet today.</div></sc-if>
+        <sc-for list="{{ log }}" as="l" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:40px 1fr;gap:8px;padding:6px 8px;font-size:12.5px;line-height:1.45">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#75757e">{{ l.t }}</span>
+            <div style="min-width:0"><span style="color:{{ l.c }}">{{ l.v }}</span><span style="color:#8e8e97"> · {{ l.topic }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;todayState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ready&quot;,&quot;generating&quot;,&quot;error&quot;,&quot;key error&quot;],&quot;default&quot;:&quot;ready&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;States&quot;},&quot;demoMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;States&quot;},&quot;emptyBacklog&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;States&quot;},&quot;gradingFails&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;States&quot;}}">
+const AREAS=["React internals","Next.js","Node runtime","Advanced TypeScript","Postgres & databases","GraphQL & API design","Testing strategy","Web performance","Security","System design","Architecture patterns","Distributed systems","CI/CD & DevOps","Observability","CS fundamentals","Engineering leadership & practices"];
+const C={pass:'oklch(0.76 0.11 155)',partial:'oklch(0.8 0.11 80)',fail:'oklch(0.74 0.11 25)',rev:'oklch(0.76 0.09 245)'};
+const V={pass:{l:'Pass',c:C.pass},partial:{l:'Partial',c:C.partial},fail:{l:'Not yet',c:C.fail}};
+const S={U:{l:'Unanswered',c:'#8a8a93'},P:{l:'Partial',c:C.partial},L:{l:'Learned',c:C.pass},R:{l:'Revealed',c:C.rev}};
+const tint=c=>c.replace(')',' / 0.13)');
+
+const WORDS=[
+{id:'mvcc',today:true,term:'MVCC',full:'Multi-version concurrency control',area:'Postgres & databases',level:'mid-senior',date:'Sun 27 Sep 2026',topics:[
+ {t:'Snapshots and tuple visibility',qs:[
+  {p:"Under READ COMMITTED and under REPEATABLE READ, when is a transaction's snapshot taken, and what does it contain?",
+   a:"READ COMMITTED takes a fresh snapshot at the start of every statement; REPEATABLE READ takes one at the first statement and keeps it for the whole transaction. A snapshot records xmin (oldest still-active XID), xmax (first unassigned XID) and the list of XIDs in progress between them.",
+   k:["Per-statement vs per-transaction snapshot","xmin / xmax bounds","The in-progress XID list"],h:"What exactly is recorded in a snapshot that lets Postgres decide whether a row version is visible?",s:'L',
+   att:[{v:'partial',text:"READ COMMITTED sees the latest committed data each time, REPEATABLE READ sees the same data for the whole transaction.",fb:"Right behaviour — now go one level down. What is actually recorded in a snapshot that lets Postgres decide whether a given row version is visible to you?",t:'09:12'},
+        {v:'pass',text:"RC takes a new snapshot per statement, RR takes it at the first statement and reuses it. The snapshot is xmin, xmax and the list of transaction IDs still in progress — anything committed before xmin and not in that list is visible.",fb:"That holds up. You named both the timing and the three parts of a snapshot. A good next thread to pull: how subtransactions (SAVEPOINT) complicate that in-progress list.",t:'09:21'}]},
+  {p:"A row version has a committed xmin and an xmax set by a transaction that is still running. Is it visible to a new snapshot? Why?",
+   a:"Yes. The deleting/updating transaction hasn't committed, so from the new snapshot's point of view the change hasn't happened and this version is still the live one.",k:["xmax only counts once committed","In-progress XIDs are treated as invisible"],s:'L',
+   att:[{v:'pass',text:"Yes — the transaction that set xmax hasn't committed, so for my snapshot the delete hasn't happened yet and this is still the current version.",fb:"Exactly. xmax only hides a version once that XID has committed and isn't in your snapshot's in-progress list.",t:'09:26'}]}]},
+ {t:'What an UPDATE really writes',qs:[
+  {p:"What does an UPDATE physically do to a row in Postgres, in terms of tuple versions and indexes?",
+   a:"It never overwrites. It writes a new tuple version with a new xmin, sets xmax on the old version and links old to new via ctid. Every index normally gets a new entry too, unless the update qualifies as HOT (no indexed column changed and there is room on the same page).",
+   k:["New tuple; old one gets xmax","ctid chain between versions","Index entries and HOT updates"],h:"Think about the table's indexes: do they need to change when a row gets a new physical location? Is there a case where they don't?",s:'P',
+   att:[{v:'partial',text:"It creates a new version of the row and marks the old one as dead, so readers with an older snapshot can still see the old one.",fb:"The core idea is there. You haven't said anything about the table's indexes yet — do they need to change when a row gets a new physical location? Is there a case where they don't?",t:'09:34'}]}]},
+ {t:'Isolation levels in Postgres',qs:[
+  {p:"Postgres REPEATABLE READ is stricter than the SQL standard requires. Which anomaly does it prevent that the standard allows, and which one does it still allow?",
+   a:"It prevents phantom reads, because the snapshot is fixed for the whole transaction. It still allows write skew and other serialization anomalies, which only SERIALIZABLE prevents.",k:["Phantoms prevented by the fixed snapshot","Write skew still possible"],h:"Name the anomaly by what a second identical query would or wouldn't see, then think about two transactions writing different rows."},
+  {p:"Your service retries transactions that fail with serialization_failure. What has to be true about the retried code for that to be safe?",
+   a:"The whole transaction must be re-run from the start, reads included, and anything with effects outside the database (emails, HTTP calls, queue messages) must happen after commit or be idempotent.",k:["Retry the whole transaction, not the last statement","No external side effects before commit","Idempotency"],h:"Consider what the code did before the failing statement — both inside and outside the database."}]},
+ {t:'VACUUM and dead tuples',qs:[
+  {p:"Why can one transaction left idle for hours cause bloat across the whole database?",
+   a:"VACUUM can only remove tuple versions that no snapshot could still see. The oldest open transaction holds back the xmin horizon for the whole cluster, so dead tuples everywhere accumulate until it ends.",k:["The xmin horizon","Dead tuples stay while any snapshot might see them","'idle in transaction' sessions"],s:'R',
+   att:[{v:'fail',text:"Because vacuum is blocked by the locks it holds.",fb:"Locks aren't the issue here — VACUUM doesn't wait on that transaction's locks. Ask instead: which row versions is VACUUM allowed to delete, and what decides that?",t:'09:41'}]}]},
+ {t:'Write skew',qs:[
+  {p:"Two on-call doctors each check that someone else is on call, then both sign off. Why doesn't locking the rows you update prevent this?",
+   a:"Each transaction updates a different row, so there's no write-write conflict. The invariant depends on rows they only read. You need SELECT … FOR UPDATE on the rows read, a constraint that materialises the conflict, or SERIALIZABLE.",k:["Disjoint writes, no conflict","The invariant lives in the read set","FOR UPDATE, materialise the conflict, or SERIALIZABLE"],h:"Look at which rows each transaction reads versus which rows it writes."},
+  {p:"How does SERIALIZABLE in Postgres detect this without making readers block writers?",
+   a:"Serializable Snapshot Isolation tracks read-write dependencies with SIRead predicate locks that never block. When it sees a dangerous structure — two consecutive rw-antidependencies in a potential cycle — it aborts one transaction with serialization_failure.",k:["SIRead locks don't block","rw-antidependencies","Abort on a dangerous structure"],h:"What would it need to record about reads, and when would it act on that record?"}]},
+ {t:'Transaction ID wraparound',qs:[
+  {p:"What is XID wraparound, and what does freezing do to prevent it?",
+   a:"XIDs are 32-bit and compared modulo 2³², so after ~2 billion transactions old XIDs would appear to be in the future and rows would vanish. Freezing marks old tuples as visible to everyone, so their XID no longer matters.",k:["32-bit circular XID space","Frozen tuples are always visible","Anti-wraparound autovacuum"],s:'L',
+   att:[{v:'pass',text:"Transaction IDs are 32-bit and wrap around, so very old rows would suddenly look like they were written in the future. VACUUM freezes old tuples so they count as visible to everyone regardless of XID.",fb:"Clear and correct. Worth knowing next: why anti-wraparound autovacuum can't be cancelled and what that means during an incident.",t:'09:48'}]}]},
+ {t:'MVCC vs two-phase locking',qs:[
+  {p:"What does MVCC give up compared with strict two-phase locking, and where does that cost show up in operations?",
+   a:"Readers and writers don't block each other, but you pay in storage and maintenance: old versions pile up and need VACUUM, you get bloat and wraparound risk, and default snapshot isolation allows anomalies strict 2PL wouldn't.",k:["Readers and writers don't block","Garbage: bloat and VACUUM","Weaker default isolation"],h:"Think about what happens to all the old versions, and about which anomalies each approach allows by default."}]}]},
+{id:'bp',term:'Backpressure',full:'Flow control between fast producers and slow consumers',area:'Node runtime',level:'mid-senior',date:'Sat 26 Sep',topics:[
+ {t:'highWaterMark and write()',qs:[{p:"What does highWaterMark control on a Writable, and what does write() returning false mean?",a:"It's the buffer threshold; false means the buffer is past it and you should wait for 'drain'.",k:["Buffer threshold","Wait for 'drain'"],s:'L'}]},
+ {t:'pipe() vs pipeline()',qs:[{p:"Why is stream.pipeline preferred over chaining .pipe() calls?",a:"pipeline forwards errors and destroys every stream on failure; .pipe() leaks streams and swallows errors.",k:["Error propagation","Cleanup on failure"],s:'L'}]},
+ {t:'Backpressure over HTTP',qs:[{p:"A client downloads slowly from your Node server. How does backpressure travel back to the file you're reading from?",a:"TCP's window fills, the socket's write() returns false, pipeline pauses the file read stream until 'drain'.",k:["TCP window","Socket buffer → paused readable"],h:"Start at the TCP socket and work backwards through the streams.",s:'P'}]},
+ {t:'Unbounded queues',qs:[{p:"Why is an in-memory queue without a limit a backpressure bug?",a:"It hides overload until memory runs out; a bound forces you to slow, shed or reject upstream.",k:["Hidden overload","Bound → shed or slow"]}]}]},
+{id:'rr',term:'React reconciliation',full:'How React decides what to change in the DOM',area:'React internals',level:'mid',date:'Fri 25 Sep',topics:[
+ {t:'Keys and identity',qs:[{p:"Why does using an array index as a key cause bugs when a list is reordered?",a:"Keys define identity; index keys attach state to positions, not items.",k:["Keys = identity","State follows the key"],s:'L'}]},
+ {t:'Element type changes',qs:[{p:"What happens to a subtree's state when a component's element type changes between renders?",a:"React unmounts the old subtree and mounts a new one; all state below is lost.",k:["Different type → remount"],s:'L'}]},
+ {t:'Fiber and interruptible work',qs:[{p:"What does the Fiber architecture let React do that the old stack reconciler couldn't?",a:"Split rendering into units of work that can be paused, prioritised and resumed.",k:["Units of work","Priorities / lanes"],s:'R'}]},
+ {t:'Bailouts',qs:[{p:"When does React skip rendering a child entirely?",a:"When props, state and context are referentially unchanged, e.g. via memo or the same element object.",k:["Referential equality","memo"],s:'L'}]}]},
+{id:'idem',term:'Idempotency keys',full:'Making retried writes safe',area:'GraphQL & API design',level:'mid-senior',date:'Thu 24 Sep',topics:[
+ {t:'Why clients retry',qs:[{p:"Why can't a client tell whether a timed-out POST succeeded?",a:"The request may have been processed and only the response lost.",k:["Lost response ≠ failed request"],s:'L'}]},
+ {t:'Storing the key',qs:[{p:"What must the server store alongside an idempotency key, and for how long?",a:"The request fingerprint and the final response, for at least the client's retry window.",k:["Fingerprint + response","Retention window"],h:"Consider a retry that arrives with the same key but a different body.",s:'P'}]},
+ {t:'Concurrent duplicates',qs:[{p:"Two requests with the same key arrive at the same time. What should happen?",a:"One acquires the key (e.g. unique insert/lock); the other waits or gets 409 until the first finishes.",k:["Atomic claim","409 or wait"]}]},
+ {t:'Idempotency in GraphQL mutations',qs:[{p:"Where would you put an idempotency key in a GraphQL mutation, and why not in the query string?",a:"In a mutation input field or header; it's part of the operation's contract, not the transport.",k:["Input field or header"]}]}]},
+{id:'cb',term:'Circuit breaker',full:'Failing fast when a dependency is unhealthy',area:'Distributed systems',level:'mid-senior',date:'Tue 22 Sep',topics:[
+ {t:'The three states',qs:[{p:"Describe closed, open and half-open, and what moves the breaker between them.",a:"Closed passes calls; failures over a threshold open it; after a timeout half-open lets trial calls decide.",k:["Thresholds","Half-open trial"]}]},
+ {t:'Breakers vs retries',qs:[{p:"How can retries without a breaker make an outage worse?",a:"They multiply load on a struggling dependency — a retry storm.",k:["Retry storm","Load amplification"]}]},
+ {t:'Fallbacks',qs:[{p:"What makes a good fallback when the breaker is open?",a:"Something cheap and honest: cached data, a degraded feature, or a clear error.",k:["Cheap","Honest degradation"]}]},
+ {t:'Per-dependency scope',qs:[{p:"Why scope a breaker per dependency (or per endpoint) instead of globally?",a:"So one bad dependency doesn't cut off healthy ones.",k:["Blast radius"]}]}]}
+];
+
+const now=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+const flags=s=>({isU:s==='U',isP:s==='P',isL:s==='L',isR:s==='R'});
+
+class Component extends DCLogic {
+  state=(()=>{const qs={};WORDS.forEach(w=>w.topics.forEach((t,ti)=>t.qs.forEach((q,qi)=>{
+    let att=q.att;
+    if(!att){att=q.s==='L'?[{v:'pass',text:'',fb:'Passed.',t:w.date}]:q.s==='P'?[{v:'partial',text:'',fb:q.h||'',t:w.date}]:[];}
+    qs[w.id+':'+ti+':'+qi]={status:q.s||'U',att,draft:'',grading:false,gradeError:false,confirm:false,composer:false};
+  })));
+  return {screen:'today',wordId:'mvcc',open:{'mvcc:1':true,'mvcc:2':true},qs,filter:'progress',gen:null,
+    notifyTime:'09:00',level:'mid-senior',areas:AREAS.filter(a=>a!=='CI/CD & DevOps'),
+    tags:['TypeScript/JavaScript','React','Next.js','Node.js','PostgreSQL','GraphQL','Supabase','MongoDB','Jest','Tailwind','Vercel','Git'],
+    newTag:'',apiKey:'sk-ant-api03-7f2kQ9xZ',keyTest:null,model:'claude-sonnet-4-5',launch:true};})();
+
+  upd(k,p){this.setState(s=>({qs:{...s.qs,[k]:{...s.qs[k],...p}}}));}
+  submit(k,q){
+    const cur=this.state.qs[k];const text=cur.draft.trim();if(!text||cur.grading)return;
+    this.upd(k,{grading:true,gradeError:false});
+    setTimeout(()=>{
+      if(this.props.gradingFails){this.upd(k,{grading:false,gradeError:true});return;}
+      const n=text.length;let v,fb;
+      if(n<70){v='fail';fb="This names the idea but doesn't explain the mechanism yet. "+(q.h||'');}
+      else if(n<200){v='partial';fb="You're on the right track. "+(q.h||'');}
+      else{v='pass';fb="That holds up — you explained the mechanism, not just the outcome.";}
+      const c=this.state.qs[k];
+      const status=c.status==='R'?'R':v==='pass'?'L':'P';
+      this.upd(k,{grading:false,draft:'',status,composer:false,att:[...c.att,{v,text,fb,t:now()}]});
+    },1700);
+  }
+  spin(sz){return React.createElement('span',{style:{width:sz,height:sz,flex:'none',border:'1.5px solid currentColor',borderRightColor:'transparent',borderRadius:'50%',display:'inline-block',boxSizing:'border-box',animation:'drpk-spin .8s linear infinite'}});}
+
+  wordVM(w){
+    let learned=0,revealed=0,total=0;const segs=[];const st=this.state;
+    const topics=w.topics.map((t,ti)=>{
+      const qs=t.qs.map((q,qi)=>{
+        const k=w.id+':'+ti+':'+qi;const s=st.qs[k];total++;
+        if(s.status==='L')learned++;if(s.status==='R')revealed++;
+        segs.push({c:s.status==='U'?'#34343a':S[s.status].c});
+        const done=s.status==='L'||s.status==='R';
+        return {status:s.status,label:'Q'+(qi+1),prompt:q.p,statusLabel:S[s.status].l,statusColor:S[s.status].c,
+          attempts:s.att.map((a,i)=>({n:i+1,vl:V[a.v].l,vc:V[a.v].c,vb:tint(V[a.v].c),text:a.text,hasText:!!a.text,fb:a.fb,t:a.t})),
+          hasAttempts:s.att.length>0,draft:s.draft,onInput:e=>this.upd(k,{draft:e.target.value,gradeError:false}),
+          onSubmit:()=>this.submit(k,q),grading:s.grading,gradeError:s.gradeError,
+          submitLabel:s.grading?'Grading…':s.gradeError?'Try again':'Submit',btnSpin:s.grading?this.spin(12):null,
+          submitDisabled:s.grading||!s.draft.trim(),submitOpacity:(s.grading||!s.draft.trim())?0.55:1,
+          showComposer:(!done||s.composer)&&!s.confirm,showReopen:done&&!s.composer,
+          reopenLabel:s.status==='R'?'Write it in your own words anyway':'Answer again',onReopen:()=>this.upd(k,{composer:true}),
+          revealed:s.status==='R',answer:q.a,keys:(q.k||[]).map(x=>({x})),
+          canReveal:s.status!=='R'&&!s.grading,confirm:s.confirm,
+          onAsk:()=>this.upd(k,{confirm:true}),onCancel:()=>this.upd(k,{confirm:false}),
+          onReveal:()=>this.upd(k,{confirm:false,status:'R',composer:false})};
+      });
+      const sts=qs.map(x=>x.status);
+      const ts=sts.every(x=>x==='L')?'L':sts.every(x=>x==='L'||x==='R')?'R':sts.some(x=>x!=='U')?'P':'U';
+      const done=sts.filter(x=>x==='L'||x==='R').length;const ok=w.id+':'+ti;const open=!!st.open[ok];
+      return {title:t.t,...flags(ts),open,chev:open?'▾':'▸',qs,meta:done+'/'+t.qs.length,
+        titleColor:(ts==='L'||ts==='R')?'#a3a3ab':'#e4e4e7',onToggle:()=>this.setState(s=>({open:{...s.open,[ok]:!s.open[ok]}}))};
+    });
+    const complete=learned+revealed===total;
+    return {term:w.term,full:w.full,area:w.area,level:w.level,date:w.date,topics,segs,learned,revealed,total,complete,
+      started:learned+revealed>0||topics.some(t=>t.isP),
+      progress:learned+'/'+total+' learned'+(revealed?' · '+revealed+' revealed':''),short:(learned+revealed)+'/'+total};
+  }
+
+  renderVals(){
+    const st=this.state,p=this.props;
+    const empty=!!p.emptyBacklog;
+    const words=empty?WORDS.filter(w=>w.today):WORDS;
+    const vms=Object.fromEntries(words.map(w=>[w.id,this.wordVM(w)]));
+    const tsMap={ready:'ready',generating:'generating',error:'error','key error':'keyerror'};
+    const today=st.gen||tsMap[p.todayState]||'ready';
+    const go=(screen,wordId)=>()=>this.setState(s=>({screen,wordId:wordId||s.wordId}));
+    const open=id=>go(id==='mvcc'?'today':'word',id);
+    const isToday=st.screen==='today',isWord=st.screen==='word';
+    const cw=isWord?WORDS.find(w=>w.id===st.wordId):WORDS[0];
+    const past=words.filter(w=>!w.today);
+    const inProg=past.filter(w=>!vms[w.id].complete).length;
+    const nav=[['Today','today',vms.mvcc.short],['Backlog','backlog',inProg?inProg+' open':''],['Settings','settings','']].map(([label,s,count])=>{
+      const on=st.screen===s||(s==='backlog'&&isWord);
+      return {label,count,go:go(s),bg:on?'#2a2a2f':'transparent',color:on?'#ececef':'#a3a3ab'};});
+    const fl=past.filter(w=>st.filter==='all'||(st.filter==='learned'?vms[w.id].complete:!vms[w.id].complete));
+    const counts={};words.forEach(w=>counts[w.area]=(counts[w.area]||0)+1);
+    const max=Math.max(1,...Object.values(counts));
+    const covered=Object.keys(counts).length;
+    const unfinished=words.filter(w=>!vms[w.id].complete).map(w=>({term:w.term,when:w.today?'Today':w.date,progress:vms[w.id].short,open:open(w.id),
+      bg:((isToday&&w.today)||(isWord&&st.wordId===w.id))?'#26262a':'transparent'}));
+    const log=[];WORDS[0].topics.forEach((t,ti)=>t.qs.forEach((q,qi)=>{const s=st.qs['mvcc:'+ti+':'+qi];
+      s.att.forEach(a=>log.push({t:a.t,v:V[a.v].l,c:V[a.v].c,topic:t.t}));
+      if(s.status==='R')log.push({t:'09:43',v:'Revealed',c:C.rev,topic:t.t});}));
+    log.sort((a,b)=>b.t.localeCompare(a.t));
+    const kt=st.keyTest;
+    const seg=(cur,val,label,fn)=>({label,go:fn,bg:cur===val?'#303036':'transparent',color:cur===val?'#ececef':'#8e8e97'});
+    return {
+      tabTitle:isToday?'Today — '+(today==='ready'?WORDS[0].term:'…'):isWord?cw.term:st.screen==='backlog'?'Backlog':'Settings',
+      demo:!!p.demoMode,showDemoNote:!!p.demoMode&&isToday,notifyTime:st.notifyTime,nav,
+      showWordScreen:isToday||isWord,fromBacklog:isWord,crumb:isWord?'Backlog':'Today',crumbTerm:isToday&&today!=='ready'?'—':cw.term,
+      goBacklog:go('backlog'),goSettings:e=>{e&&e.preventDefault&&e.preventDefault();this.setState({screen:'settings'});},
+      todayDate:WORDS[0].date,
+      showGenerating:isToday&&today==='generating',showError:isToday&&(today==='error'||today==='keyerror'),
+      isKeyError:today==='keyerror',
+      errorMsg:today==='keyerror'?"Your API key was rejected, so the word couldn't be generated. Update it in Settings, then retry.":"The model didn't respond in time. This is usually temporary.",
+      errorCode:today==='keyerror'?'401 Unauthorized · invalid x-api-key':'Request timed out after 60 s',
+      retry:()=>{this.setState({gen:'generating'});setTimeout(()=>this.setState({gen:'ready'}),2400);},
+      spinner:this.spin(12),
+      pulse:React.createElement('div',{style:{width:'100%',height:'100%',borderRadius:6,background:'#333339',animation:'drpk-pulse 1.6s ease-in-out infinite'}}),
+      showWord:isWord||(isToday&&today==='ready'),w:vms[cw.id]||vms.mvcc,
+      isBacklog:st.screen==='backlog',
+      filters:[seg(st.filter,'progress','In progress',()=>this.setState({filter:'progress'})),seg(st.filter,'learned','Learned',()=>this.setState({filter:'learned'})),seg(st.filter,'all','All',()=>this.setState({filter:'all'}))],
+      backlog:fl.map(w=>{const v=vms[w.id];return {term:w.term,area:w.area,level:w.level,date:w.date,progress:v.short,segs:v.segs,
+        done:v.complete,started:!v.complete&&v.started,fresh:!v.complete&&!v.started,open:open(w.id)};}),
+      backlogEmpty:fl.length===0,
+      emptyTitle:empty?'Your first day':'Nothing in this view',
+      emptyBody:empty?"Past words will collect here. If you don't finish today's word, it moves here tomorrow and waits for you.":'Try another filter.',
+      coverage:AREAS.map(a=>{const n=counts[a]||0;const on=st.areas.includes(a);return {name:a,count:n,w:(n/max*100)+'%',color:!on?'#55555d':n?'#c9c9ce':'#75757e'};}),
+      coverageSummary:covered+' of 16 areas',
+      isSettings:st.screen==='settings',
+      onTime:e=>this.setState({notifyTime:e.target.value}),
+      levels:['mid','mid-senior','senior'].map(l=>seg(st.level,l,l,()=>this.setState({level:l}))),
+      areasOn:st.areas.length+' of 16',
+      areaOpts:AREAS.map(a=>{const on=st.areas.includes(a);return {name:a,on,off:!on,color:on?'#dcdcdf':'#8e8e97',
+        toggle:()=>this.setState(s=>({areas:on?s.areas.filter(x=>x!==a):[...s.areas,a]}))};}),
+      tags:st.tags.map(t=>({name:t,remove:()=>this.setState(s=>({tags:s.tags.filter(x=>x!==t)}))})),
+      newTag:st.newTag,onNewTag:e=>this.setState({newTag:e.target.value}),
+      onTagKey:e=>{if(e.key==='Enter'){const v=st.newTag.trim();if(v&&!st.tags.includes(v))this.setState(s=>({tags:[...s.tags,v],newTag:''}));}},
+      apiKey:p.demoMode?'':st.apiKey,onKey:e=>this.setState({apiKey:e.target.value,keyTest:null}),
+      testKey:()=>{this.setState({keyTest:'testing'});const k=p.demoMode?'':st.apiKey;setTimeout(()=>this.setState({keyTest:/^sk-.{12,}/.test(k.trim())?'ok':'err'}),1200);},
+      keySpin:kt==='testing'?this.spin(12):null,keyOk:kt==='ok',keyErr:kt==='err',
+      model:st.model,onModel:e=>this.setState({model:e.target.value}),
+      toggleLaunch:()=>this.setState(s=>({launch:!s.launch})),launchBg:st.launch?'oklch(0.72 0.12 290)':'#3a3a40',launchKnob:st.launch?'18px':'2px',
+      unfinished,noUnfinished:unfinished.length===0,log:log.slice(0,8),noLog:log.length===0
+    };
+  }
+}
+</script>
+</body>
+</html>
