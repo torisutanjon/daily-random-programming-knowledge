@@ -21,7 +21,7 @@ yarn test
 
 ## Build the Windows installer
 
-Prerequisites: Node 24 LTS installed on Windows, and `corepack enable` run once in a Windows terminal.
+Prerequisite: Node 24 LTS installed on Windows (the script runs Yarn through `corepack`, which ships with Node).
 
 Run from PowerShell:
 

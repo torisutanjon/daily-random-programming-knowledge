@@ -13,7 +13,7 @@
     "test": "jest",
     "type-check": "next typegen && tsc --noEmit",
     "build:electron": "tsc -p electron/tsconfig.json",
-    "dist": "next build && node scripts/prepare-standalone.mjs && yarn build:electron && electron-builder --win nsis"
+    "dist": "next build && node scripts/prepare-standalone.mjs && tsc -p electron/tsconfig.json && electron-builder --win nsis"
   },
   "build": {
     "appId": "com.drpk.app",
