@@ -19,10 +19,13 @@
 
 # production
 /build
+/dist
+/dist-electron
 
 # misc
 .DS_Store
 *.pem
+/.playwright-mcp
 
 # debug
 npm-debug.log*

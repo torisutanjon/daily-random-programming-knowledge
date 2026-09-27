@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# drpk — Daily Random Programming Knowledge
 
-## Getting Started
+A desktop app that surfaces a random piece of programming knowledge every day.
 
-First, run the development server:
+## Develop (WSL)
 
-```bash
-npm run dev
-# or
+```
+yarn install
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Checks:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+yarn type-check
+yarn lint
+yarn test
+```
 
-## Learn More
+## Build the Windows installer
 
-To learn more about Next.js, take a look at the following resources:
+Prerequisite: Node 24 LTS installed on Windows (the script runs Yarn through `corepack`, which ships with Node).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run from PowerShell:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu\home\clarisfanhere\Practices\personal-projects\drpk\scripts\build-win.ps1
+```
 
-## Deploy on Vercel
+It copies the repo to `%LOCALAPPDATA%\drpk-build`, installs dependencies, and runs `yarn dist`. The installer is written to `%LOCALAPPDATA%\drpk-build\dist\drpk Setup <version>.exe`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How it runs
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Electron starts Next's standalone `server.js` on a free localhost port (via `utilityProcess`), then opens the app window pointed at that server.

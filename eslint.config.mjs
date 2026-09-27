@@ -7,6 +7,9 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
+    // Electron build output:
+    "dist/**",
+    "dist-electron/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
