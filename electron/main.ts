@@ -106,24 +106,18 @@ async function startServer(): Promise<string> {
     stdio: "inherit",
   });
 
-  let exitedEarly = false;
-  server.once("exit", () => {
-    exitedEarly = true;
+  const exited = new Promise<never>((_, reject) => {
+    server?.once("exit", (code) => reject(new Error(`server process exited (code ${code})`)));
   });
+  exited.catch(() => {}); // the later kill on quit must not surface as an unhandled rejection
 
   try {
-    await waitForServer(url, { timeoutMs: 20000, intervalMs: 200 });
+    await Promise.race([waitForServer(url, { timeoutMs: 20000, intervalMs: 200 }), exited]);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     dialog.showErrorBox("drpk", `Couldn't start the app server: ${message}`);
     app.quit();
     throw error;
-  }
-
-  if (exitedEarly) {
-    dialog.showErrorBox("drpk", "Couldn't start the app server: server process exited early");
-    app.quit();
-    throw new Error("Server process exited before it was ready");
   }
 
   return url;
