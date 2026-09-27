@@ -35,7 +35,9 @@ A personal Windows desktop app that gives Tristan one programming "word of the d
 | Desktop wrapper | Electron hosting a Next.js server | All-TypeScript; Next route handlers keep API key server-side |
 | Target OS | Windows (developed in WSL2) | Where the app runs day to day |
 | Storage | JSON files behind a repository interface (no SQLite) | Tiny data; avoids native-module pain for Windows builds from WSL |
-| LLM | Anthropic Claude API, default model `claude-opus-5`, configurable | Quality of generation and grading |
+| LLM | Anthropic Claude API, default model `claude-opus-5-5`, configurable | Quality of generation and grading |
+| Window chrome | Hidden title bar with native window controls (`titleBarStyle: 'hidden'` + `titleBarOverlay`) | Matches the design while keeping Windows' own controls and snap layouts |
+| Visual design | Claude Design export in `docs/design/` is the visual reference | One agreed look before UI work |
 
 ## 3. Default profile
 
@@ -70,13 +72,14 @@ Electron main (desktop concerns only)   Next.js server (all app logic)
 - **Day rule:** the current word changes at the user's configured time, not at midnight. With `notifyTime = 09:00`, at 08:30 on Tuesday the current word is still Monday's. The `dayKey` (`YYYY-MM-DD`, local time) of the current word is computed by a pure function `currentDayKey(now, notifyTime)`.
 - **Missed triggers:** the scheduler checks on app start and on resume from sleep (Electron `powerMonitor` `resume`). If the current `dayKey` has no word, it calls `/api/today` and shows the toast immediately. Opening the UI performs the same get-or-generate, so a word is never missing.
 - **First run:** the first word is generated immediately, regardless of the configured time.
+- **Window chrome:** the BrowserWindow uses `titleBarStyle: 'hidden'` with `titleBarOverlay` (colours from the design's title bar), so the app draws its own title bar and Windows keeps the native minimize / maximize / close buttons.
 - **Demo mode:** with no API key set, `FakeProvider` is used and the UI shows a "demo mode" badge.
 
 ## 5. Units
 
 | Unit | Responsibility | Depends on |
 |---|---|---|
-| `electron/main.ts` | App lifecycle, single-instance lock, start Next server, BrowserWindow, hide-to-tray, launch-at-login | Electron, `electron/scheduler.ts` |
+| `electron/main.ts` | App lifecycle, single-instance lock, start Next server, BrowserWindow (hidden title bar + native controls overlay), hide-to-tray, launch-at-login | Electron, `electron/scheduler.ts` |
 | `electron/scheduler.ts` | Compute next fire time (pure `nextFireAt(now, notifyTime)`), set timer, handle resume, call `/api/today`, show `Notification` | settings via `/api/settings` |
 | `lib/domain/day.ts` | `currentDayKey`, `nextFireAt` — pure, DST-safe, local time | none |
 | `lib/domain/coverage.ts` | `pickArea(history, enabledAreas, rng)` — weighted-random favouring least-covered areas | none |
@@ -105,13 +108,14 @@ interface Settings {
   areas: AreaId[];             // enabled areas, default all
   stackProfile: string[];      // default: stack from section 3
   apiKey: string | null;       // null → demo mode (FakeProvider)
-  model: string;               // default 'claude-opus-5'
+  model: string;               // default 'claude-opus-5-5'
   launchAtLogin: boolean;      // default true
 }
 
 interface Word {
   dayKey: string;              // "2026-09-26"
   term: string;
+  subtitle: string;            // short expansion, e.g. "Multi-version concurrency control"
   area: AreaId;
   level: Level;
   topics: Topic[];             // 4–8
@@ -127,6 +131,7 @@ interface Question {
   rubric: string[];            // hidden: key points a passing answer must cover
   modelAnswer: string;         // hidden until revealed
   status: 'unanswered' | 'partial' | 'learned' | 'revealed';
+  revealedAt: string | null;   // ISO; set when revealed, null otherwise
   attempts: Attempt[];
 }
 
@@ -140,7 +145,7 @@ interface Attempt { answer: string; verdict: 'pass' | 'partial' | 'fail'; feedba
 ## 7. Generation flow
 
 1. `pickArea` chooses an area from enabled areas, weighted toward those with the fewest past words (weight = 1 / (1 + count)); random tie-breaking via an injectable RNG.
-2. One LLM call with: chosen area, level, stack profile, and the list of all past terms (to avoid repeats). It returns `{ term, topics: [{ title, questions: [{ prompt, rubric[], modelAnswer }] }] }`.
+2. One LLM call with: chosen area, level, stack profile, and the list of all past terms (to avoid repeats). It returns `{ term, subtitle, topics: [{ title, questions: [{ prompt, rubric[], modelAnswer }] }] }`.
 3. Validate with the zod schema (4–8 topics, 1–2 questions each, ≤12 questions total). Reject if the term case-insensitively matches a past term.
 4. On invalid output or a repeat, retry once; on a second failure, surface an error with a Retry action.
 5. Persist, then return the sanitized word.
@@ -152,14 +157,14 @@ A per-`dayKey` in-flight promise guarantees one generation even if the scheduler
 1. Input: question prompt, rubric, the user's answer.
 2. LLM returns `{ verdict: 'pass' | 'partial' | 'fail', feedback }`. The prompt instructs it to name which aspects are missing or wrong **without stating the rubric points or the answer**.
 3. Append an `Attempt`, update the question status, persist, return the sanitized question.
-4. `POST /api/reveal` sets `revealed` and returns that question's `modelAnswer` and rubric.
+4. `POST /api/reveal` sets `revealed` and `revealedAt`, and returns that question's `modelAnswer` and rubric.
 
 The rubric is fixed at generation time, so grading stays consistent across retries. `rubric` and unrevealed `modelAnswer` never appear in any API response.
 
 ## 9. LLM integration (Anthropic)
 
 - SDK: `@anthropic-ai/sdk`. Client constructed with the key from Settings.
-- Default model `claude-opus-5`; configurable in Settings (e.g. to a cheaper model — the user's choice).
+- Default model `claude-opus-5-5`; configurable in Settings (e.g. to a cheaper model — the user's choice).
 - Structured output via `client.messages.parse({ ..., output_config: { format: zodOutputFormat(schema) } })` using `zodOutputFormat` from `@anthropic-ai/sdk/helpers/zod`; the same zod schemas used for validation. Guard `parsed_output` being null.
 - Adaptive thinking (default on Opus 5). Effort: `high` for generation, `low` for grading.
 - `max_tokens`: 16000 for generation (non-streaming), 2000 for grading.
@@ -170,10 +175,12 @@ The rubric is fixed at generation time, so grading stays consistent across retri
 
 ## 10. UI
 
-- **Today (home):** large term, area and level chips, progress ("6/10 learned · 1 revealed"). Checklist of topics (title only); a topic auto-ticks when done, with distinct icons for learned vs revealed. Expanding a topic shows its questions: textarea, Submit, attempts list (verdict + feedback), "Reveal answer" behind a confirmation.
-- **Backlog:** past words with filter (in progress / learned / all); each opens the same word view. Coverage panel: count of words per area.
+- **Visual reference:** `docs/design/drpk.dc.html` (Claude Design export; open it in a browser — it needs `support.js` beside it). Reference images: `docs/design/wireframe.png` (layout sketch) and `docs/design/style-reference.png` (tone reference). Dark theme; IBM Plex Sans + JetBrains Mono; status colours: pass/learned green, partial amber, fail ("Not yet") red, revealed blue.
+- **Shell:** app-drawn title bar (drpk mark, current view title, demo-mode badge) with native window controls; left nav — Today, Backlog, Settings with counts, and a "Next word" footer showing the next notify time; main column; right panel with **Unfinished** (words not yet done, with progress; each opens its word view) and **Log** (today's attempts and reveals, newest first: time, verdict, topic).
+- **Today (home):** large term with its subtitle, area and level chips, progress ("6/10 learned · 1 revealed"). Checklist of topics (title only); a topic auto-ticks when done, with distinct icons for learned vs revealed. Expanding a topic shows its questions: textarea, Submit, attempts list (verdict + feedback), "Reveal answer" behind a confirmation. A done question offers "Answer again" (learned) or "Write it in your own words anyway" (revealed).
+- **Backlog:** past words with filter (in progress / learned / all); each opens the same word view. Coverage panel: count of words per area, disabled areas dimmed. Empty states for the first day and for an empty filter.
 - **Settings:** notify time, level, area checkboxes, stack tags, API key with "Test key", model, launch-at-login.
-- States: generating (loading), error card with Retry, demo-mode badge.
+- States: generating (loading), error card with Retry (key errors link to Settings), grading in progress, grading failed (answer kept), demo-mode badge and note.
 
 ## 11. Error handling
 
