@@ -139,7 +139,7 @@ interface Attempt { answer: string; verdict: 'pass' | 'partial' | 'fail'; feedba
 ```
 
 - Topic and word status are **derived**, never stored. A topic is *done* when every question is `learned` or `revealed`; *learned* when every question is `learned`.
-- Status transitions: a `pass` sets `learned`; `partial` sets `partial`; `fail` leaves the current status (or `unanswered`). `revealed` is terminal. Answering after reveal is allowed but does not change the status.
+- Status transitions: a `pass` sets `learned`; `partial` sets `partial`; `fail` leaves the current status (or `unanswered`). `revealed` is terminal. Answering after reveal is allowed but does not change the status. A `learned` question stays `learned`: later attempts are recorded but never downgrade it.
 - Writes are atomic: write `<file>.tmp`, then rename over the target.
 
 ## 7. Generation flow
@@ -159,7 +159,7 @@ A per-`dayKey` in-flight promise guarantees one generation even if the scheduler
 3. Append an `Attempt`, update the question status, persist, return the sanitized question.
 4. `POST /api/reveal` sets `revealed` and `revealedAt`, and returns that question's `modelAnswer` and rubric.
 
-The rubric is fixed at generation time, so grading stays consistent across retries. `rubric` and unrevealed `modelAnswer` never appear in any API response.
+The rubric is fixed at generation time, so grading stays consistent across retries. `rubric` and `modelAnswer` never appear in any API response for a question that isn't `revealed`.
 
 ## 9. LLM integration (Anthropic)
 
