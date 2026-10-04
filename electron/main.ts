@@ -101,6 +101,7 @@ async function startServer(): Promise<string> {
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
       NODE_ENV: "production",
+      DATA_DIR: app.getPath("userData"),
     },
     serviceName: "drpk-next",
     stdio: "inherit",
