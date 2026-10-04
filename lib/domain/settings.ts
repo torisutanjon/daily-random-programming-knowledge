@@ -11,6 +11,8 @@ export interface Settings {
   launchAtLogin: boolean;
 }
 
+export type PublicSettings = Omit<Settings, "apiKey"> & { hasApiKey: boolean };
+
 /** A fresh copy each call, so callers can't mutate shared defaults. */
 export function defaultSettings(): Settings {
   return {
@@ -34,5 +36,19 @@ export function defaultSettings(): Settings {
     apiKey: null,
     model: "claude-opus-5-5",
     launchAtLogin: true,
+  };
+}
+
+/** Allowlist copy: the API key never leaves the server. */
+export function toPublicSettings(settings: Settings): PublicSettings {
+  const { notifyTime, level, areas, stackProfile, model, launchAtLogin, apiKey } = settings;
+  return {
+    notifyTime,
+    level,
+    areas: [...areas],
+    stackProfile: [...stackProfile],
+    model,
+    launchAtLogin,
+    hasApiKey: apiKey !== null,
   };
 }
