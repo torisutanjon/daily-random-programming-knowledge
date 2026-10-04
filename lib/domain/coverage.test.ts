@@ -1,8 +1,8 @@
 /**
  * @jest-environment node
  */
-import type { AreaId } from "./areas";
-import { pickArea } from "./coverage";
+import { AREA_IDS, type AreaId } from "./areas";
+import { areaCounts, pickArea } from "./coverage";
 
 // mulberry32: a small seedable PRNG returning [0, 1).
 function seeded(seed: number): () => number {
@@ -55,5 +55,35 @@ describe("pickArea", () => {
     }
     expect(picksOfB / 10_000).toBeGreaterThan(0.77);
     expect(picksOfB / 10_000).toBeLessThan(0.83);
+  });
+});
+
+describe("areaCounts", () => {
+  it("returns all 16 areas with count 0 for empty input", () => {
+    const counts = areaCounts([]);
+    expect(counts.length).toBe(16);
+    expect(counts.every((c) => c.count === 0)).toBe(true);
+    expect(counts.map((c) => c.area)).toEqual(AREA_IDS);
+  });
+
+  it("counts words by area, ignoring unknown areas", () => {
+    const words = [
+      { area: "nextjs" as const },
+      { area: "nextjs" as const },
+      { area: "security" as const },
+      { area: "unknown-area" }, // unknown area, ignored
+    ];
+    const counts = areaCounts(words);
+    expect(counts.filter((c) => c.count > 0)).toEqual([
+      { area: "nextjs", count: 2 },
+      { area: "security", count: 1 },
+    ]);
+  });
+
+  it("ignores unknown areas and returns all known areas", () => {
+    const words = [{ area: "unknown-area" }];
+    const counts = areaCounts(words);
+    expect(counts.length).toBe(16);
+    expect(counts.every((c) => c.count === 0)).toBe(true);
   });
 });

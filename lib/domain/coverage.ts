@@ -1,4 +1,18 @@
-import type { AreaId } from "./areas";
+import { AREAS, type AreaId } from "./areas";
+
+export interface AreaCount {
+  area: AreaId;
+  count: number;
+}
+
+/** One entry per area in AREAS order, zero included; words with an unknown area are ignored. */
+export function areaCounts(words: readonly { area: string }[]): AreaCount[] {
+  const tally = new Map<string, number>();
+  for (const word of words) {
+    tally.set(word.area, (tally.get(word.area) ?? 0) + 1);
+  }
+  return AREAS.map(({ id }) => ({ area: id, count: tally.get(id) ?? 0 }));
+}
 
 /** Weighted-random area, favouring areas with the fewest past words (weight = 1 / (1 + count)). */
 export function pickArea(
