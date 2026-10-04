@@ -17,6 +17,24 @@ export interface TodayService {
   getToday(): Promise<Word>;
 }
 
+export type GenerationFailure = "invalid_output" | "repeat";
+
+export class GenerationError extends Error {
+  readonly reason: GenerationFailure;
+
+  constructor(reason: GenerationFailure) {
+    super(reason === "repeat" ? "The model repeated a past word twice" : "The model returned an invalid word twice");
+    this.name = "GenerationError";
+    this.reason = reason;
+  }
+}
+
+const MAX_ATTEMPTS = 2;
+
+function normalize(term: string): string {
+  return term.trim().toLowerCase();
+}
+
 function toWord(
   dayKey: string,
   generated: GeneratedWord,
@@ -56,21 +74,34 @@ export function createTodayService(deps: TodayDeps): TodayService {
       rng,
     );
     const { llm, name } = getProvider(settings);
-    const raw = await llm.generateWord({
-      area,
-      level: settings.level,
-      stackProfile: settings.stackProfile,
-      pastTerms: words.map((w) => w.term),
-    });
-    const parsed = generatedWordSchema.parse(raw);
-    const word = toWord(dayKey, parsed, {
-      area,
-      level: settings.level,
-      createdAt: now().toISOString(),
-      provider: name,
-    });
-    await repo.saveWord(word);
-    return word;
+    const pastTerms = new Set(words.map((w) => normalize(w.term)));
+    let failure: GenerationFailure = "invalid_output";
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const raw = await llm.generateWord({
+        area,
+        level: settings.level,
+        stackProfile: settings.stackProfile,
+        pastTerms: words.map((w) => w.term),
+      });
+      const result = generatedWordSchema.safeParse(raw);
+      if (!result.success) {
+        failure = "invalid_output";
+        continue;
+      }
+      if (pastTerms.has(normalize(result.data.term))) {
+        failure = "repeat";
+        continue;
+      }
+      const word = toWord(dayKey, result.data, {
+        area,
+        level: settings.level,
+        createdAt: now().toISOString(),
+        provider: name,
+      });
+      await repo.saveWord(word);
+      return word;
+    }
+    throw new GenerationError(failure);
   }
 
   return {

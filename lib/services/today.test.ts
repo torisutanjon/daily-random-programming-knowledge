@@ -9,7 +9,7 @@ import { defaultSettings } from "../domain/settings";
 import { FAKE_WORDS } from "../llm/fake-words";
 import type { GeneratedWord, LlmProvider } from "../llm/types";
 import { createRepo } from "../store/repo";
-import { createTodayService } from "./today";
+import { createTodayService, GenerationError } from "./today";
 
 let dir: string;
 
@@ -102,5 +102,58 @@ describe("getToday — one word per day", () => {
     expect(word.area).toBe(pickArea([], defaultSettings().areas, () => 0));
     expect(word.level).toBe("mid-senior");
     expect(word.createdAt).toBe(now.toISOString());
+  });
+});
+
+describe("getToday — retry and typed errors", () => {
+  const invalid = { term: "" };
+
+  async function seedMvcc(): Promise<void> {
+    const seed = makeService({ results: [validWord("MVCC")], now: new Date(2026, 9, 3, 10, 0) });
+    await seed.service.getToday();
+  }
+
+  it("retries a repeated term once and accepts a fresh one", async () => {
+    await seedMvcc();
+    const { service, stub } = makeService({ results: [validWord("  mvcc "), validWord("Fresh")] });
+    expect((await service.getToday()).term).toBe("Fresh");
+    expect(stub.calls()).toBe(2);
+  });
+
+  it("fails with GenerationError repeat after two repeats", async () => {
+    await seedMvcc();
+    const { service, stub, repo } = makeService({ results: [validWord("  mvcc ")] });
+    const error = await service.getToday().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GenerationError);
+    expect((error as GenerationError).reason).toBe("repeat");
+    expect(stub.calls()).toBe(2);
+    expect(await repo.getWord("2026-10-04")).toBeNull();
+  });
+
+  it("retries invalid output once", async () => {
+    const { service, stub } = makeService({ results: [invalid, validWord("Alpha")] });
+    await expect(service.getToday()).resolves.toMatchObject({ term: "Alpha" });
+    expect(stub.calls()).toBe(2);
+  });
+
+  it("fails with GenerationError invalid_output after two invalid results", async () => {
+    const { service, stub } = makeService({ results: [invalid] });
+    const error = await service.getToday().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GenerationError);
+    expect((error as GenerationError).reason).toBe("invalid_output");
+    expect(stub.calls()).toBe(2);
+  });
+
+  it("propagates provider errors without retrying", async () => {
+    const failure = new Error("network");
+    const { service, stub } = makeService({ results: [failure] });
+    await expect(service.getToday()).rejects.toBe(failure);
+    expect(stub.calls()).toBe(1);
+  });
+
+  it("clears the in-flight entry after a failure", async () => {
+    const { service } = makeService({ results: [invalid, invalid, validWord("Later")] });
+    await expect(service.getToday()).rejects.toBeInstanceOf(GenerationError);
+    await expect(service.getToday()).resolves.toMatchObject({ term: "Later" });
   });
 });
