@@ -46,6 +46,13 @@ describe("GET /api/settings", () => {
     expect(body).toEqual(expected);
     expect("apiKey" in body).toBe(false);
   });
+
+  it("reports hasApiKey true without the key after a key is saved", async () => {
+    await put({ apiKey: "sk-test" });
+    const body = await (await get()).json();
+    expect(body.hasApiKey).toBe(true);
+    expect("apiKey" in body).toBe(false);
+  });
 });
 
 describe("PUT /api/settings", () => {
@@ -111,10 +118,12 @@ describe("PUT /api/settings", () => {
     ["non-boolean launchAtLogin", { launchAtLogin: "yes" }],
     ["unknown key", { foo: 1 }],
   ])("returns 400 invalid_request for %s", async (_name, body) => {
+    await put({ apiKey: "sk-test", level: "senior" });
+    const seeded = await createRepo(dir).getSettings();
     const response = await put(body);
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ error: { code: "invalid_request" } });
-    expect(await createRepo(dir).getSettings()).toEqual(defaultSettings());
+    expect(await createRepo(dir).getSettings()).toEqual(seeded);
   });
 
   it("persists both fields of two concurrent PUTs", async () => {
