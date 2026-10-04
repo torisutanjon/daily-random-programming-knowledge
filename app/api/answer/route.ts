@@ -28,6 +28,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     if (error instanceof NotFoundError) return errorResponse(404, "not_found", error.message);
     if (error instanceof GradingError) {
+      console.error(error.cause ?? error);
       return errorResponse(502, error.reason === "provider" ? "grading_failed" : "invalid_grade", error.message);
     }
     if (error instanceof CorruptFileError) return errorResponse(500, "corrupt_file", error.message);
