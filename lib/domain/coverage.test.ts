@@ -1,8 +1,7 @@
 /**
  * @jest-environment node
  */
-import type { AreaId } from "./areas";
-import { AREA_IDS } from "./areas";
+import { AREA_IDS, type AreaId } from "./areas";
 import { areaCounts, pickArea } from "./coverage";
 
 // mulberry32: a small seedable PRNG returning [0, 1).
@@ -75,9 +74,10 @@ describe("areaCounts", () => {
       { area: "unknown-area" }, // unknown area, ignored
     ];
     const counts = areaCounts(words);
-    expect(counts.find((c) => c.area === "nextjs")?.count).toBe(2);
-    expect(counts.find((c) => c.area === "security")?.count).toBe(1);
-    expect(counts.every((c) => c.count > 0 ? ["nextjs", "security"].includes(c.area) : true)).toBe(true);
+    expect(counts.filter((c) => c.count > 0)).toEqual([
+      { area: "nextjs", count: 2 },
+      { area: "security", count: 1 },
+    ]);
   });
 
   it("ignores unknown areas and returns all known areas", () => {

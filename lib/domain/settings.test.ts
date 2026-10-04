@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import { defaultSettings, toPublicSettings } from "./settings";
 
 describe("toPublicSettings", () => {

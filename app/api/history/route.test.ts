@@ -1,11 +1,14 @@
 /** @jest-environment node */
-import { mkdir, writeFile } from "node:fs/promises";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { AREA_IDS } from "@/lib/domain/areas";
+import type { AreaCount } from "@/lib/domain/coverage";
+import type { PublicWord } from "@/lib/domain/sanitize";
 import { makeWord } from "@/lib/test-utils/word";
 import { createRepo } from "@/lib/store/repo";
+
+type HistoryBody = { words: PublicWord[]; coverage: AreaCount[] };
 
 let dir: string;
 
@@ -25,16 +28,15 @@ async function get(): Promise<Response> {
   return GET();
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 describe("GET /api/history", () => {
   it("returns empty words and coverage for an empty directory", async () => {
     const response = await get();
     expect(response.status).toBe(200);
-    const body = await response.json() as any;
+    const body: HistoryBody = await response.json();
     expect(body.words).toEqual([]);
     expect(body.coverage.length).toBe(16);
-    expect(body.coverage.every((c: any) => c.count === 0)).toBe(true);
-    expect(body.coverage.map((c: any) => c.area)).toEqual(AREA_IDS);
+    expect(body.coverage.every((c) => c.count === 0)).toBe(true);
+    expect(body.coverage.map((c) => c.area)).toEqual(AREA_IDS);
   });
 
   it("returns words in reverse date order and sanitized with coverage counts", async () => {
@@ -44,28 +46,30 @@ describe("GET /api/history", () => {
 
     const response = await get();
     expect(response.status).toBe(200);
-    const body = await response.json() as any;
+    const body: HistoryBody = await response.json();
 
-    expect(body.words.map((w: any) => w.dayKey)).toEqual(["2026-10-02", "2026-10-01"]);
-    expect(body.words.every((w: any) => !w.topics.some((t: any) => t.questions.some((q: any) => q.rubric || q.modelAnswer)))).toBe(true);
+    expect(body.words.map((w) => w.dayKey)).toEqual(["2026-10-02", "2026-10-01"]);
 
-    const postgresEntry = body.coverage.find((c: any) => c.area === "postgres-databases");
-    expect(postgresEntry.count).toBe(2);
+    const questions = body.words.flatMap((w) => w.topics.flatMap((t) => t.questions));
+    expect(questions.length).toBe(4);
+    for (const q of questions) {
+      expect(q).not.toHaveProperty("rubric");
+      expect(q).not.toHaveProperty("modelAnswer");
+    }
+
+    expect(body.coverage.find((c) => c.area === "postgres-databases")?.count).toBe(2);
   });
 
   it("returns words and skips corrupt word files", async () => {
     const repo = createRepo(dir);
     await repo.saveWord(makeWord("2026-10-01"));
 
-    // Create corrupt file
-    await mkdir(path.join(dir, "words"), { recursive: true });
     await writeFile(path.join(dir, "words", "2026-10-03.json"), "{not json");
 
     const response = await get();
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body: HistoryBody = await response.json();
     expect(body.words.length).toBe(1);
     expect(body.words[0].dayKey).toBe("2026-10-01");
   });
 });
-/* eslint-enable @typescript-eslint/no-explicit-any */
