@@ -211,11 +211,24 @@ describe("reveal", () => {
     const realRepo = createRepo(dir);
     const word = makeWord(DAY);
     await realRepo.saveWord(word);
+    let calls = 0;
+    // Once grading has started, every read waits until both writers' reads are pending (or a short timeout,
+    // if the lock serialises them), so without a lock both would read the same stale state.
+    const held: Array<() => void> = [];
+    const flush = (): void => {
+      held.splice(0).forEach((resolve) => resolve());
+    };
     const repo: Repo = {
       ...realRepo,
       getWord: async (dayKey) => {
         const found = await realRepo.getWord(dayKey);
-        await new Promise((resolve) => setImmediate(resolve));
+        if (calls >= 1) {
+          await new Promise<void>((resolve) => {
+            held.push(resolve);
+            if (held.length >= 2) flush();
+            else setTimeout(flush, 50);
+          });
+        }
         return found;
       },
     };
@@ -223,7 +236,6 @@ describe("reveal", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    let calls = 0;
     const llm: LlmProvider = {
       async generateWord() {
         throw new Error("unused");

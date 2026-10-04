@@ -51,6 +51,8 @@ describe("POST /api/reveal", () => {
   it.each([
     ["bad JSON", () => "{not json"],
     ["bad dayKey", (id: string) => ({ dayKey: "../etc", questionId: id })],
+    ["missing questionId", () => ({ dayKey: DAY })],
+    ["empty questionId", () => ({ dayKey: DAY, questionId: "" })],
   ])("returns 400 invalid_request for %s", async (_name, build) => {
     const response = await post(build(word.topics[0].questions[0].id));
     expect(response.status).toBe(400);
