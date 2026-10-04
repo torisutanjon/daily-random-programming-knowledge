@@ -14,6 +14,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  jest.dontMock("@/lib/llm/anthropic");
   delete process.env.DATA_DIR;
   await rm(dir, { recursive: true, force: true });
 });
@@ -146,5 +147,60 @@ describe("POST /api/settings/test-key", () => {
     expect(await response.json()).toMatchObject({
       error: { code: "invalid_request" },
     });
+  });
+
+  it("returns 502 invalid_key for a malformed key without leaking it to the response or logs", async () => {
+    jest.doMock("@/lib/llm/anthropic", () => ({
+      ...jest.requireActual("@/lib/llm/anthropic"),
+      testKey: jest.fn(),
+    }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      const { POST } = await import("@/app/api/settings/test-key/route");
+      const response = await POST(
+        new Request("http://localhost/api/settings/test-key", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ apiKey: "sk-ant-SECRET\nx" }),
+        }),
+      );
+
+      expect(response.status).toBe(502);
+      const text = await response.text();
+      expect(text).toContain("invalid_key");
+      expect(text).not.toContain("SECRET");
+      for (const [arg] of errorSpy.mock.calls) {
+        const parts = [String(arg)];
+        if (arg instanceof Error) parts.push(arg.message, String(arg.cause));
+        expect(parts.join("\n")).not.toContain("SECRET");
+      }
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("returns 500 internal when testKey rejects with a plain Error", async () => {
+    jest.doMock("@/lib/llm/anthropic", () => ({
+      createAnthropicClient: jest.fn().mockReturnValue({ mocked: "client" }),
+      testKey: jest.fn().mockRejectedValue(new Error("boom")),
+    }));
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      const { POST } = await import("@/app/api/settings/test-key/route");
+      const response = await POST(
+        new Request("http://localhost/api/settings/test-key", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ apiKey: "typed" }),
+        }),
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toMatchObject({ error: { code: "internal" } });
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

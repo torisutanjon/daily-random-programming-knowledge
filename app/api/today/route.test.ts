@@ -32,6 +32,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  jest.dontMock("@/lib/llm/provider");
   jest.useRealTimers();
   delete process.env.DATA_DIR;
   await rm(dir, { recursive: true, force: true });

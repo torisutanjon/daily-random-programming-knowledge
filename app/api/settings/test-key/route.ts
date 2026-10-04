@@ -37,6 +37,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: true });
   } catch (error) {
     if (error instanceof ProviderError) {
+      console.error(error.cause ?? error);
       const { code, message } = PROVIDER_ERRORS[error.reason];
       return errorResponse(502, code, message);
     }

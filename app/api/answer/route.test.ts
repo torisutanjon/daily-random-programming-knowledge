@@ -20,6 +20,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  jest.dontMock("@/lib/llm/provider");
   delete process.env.DATA_DIR;
   await rm(dir, { recursive: true, force: true });
 });
@@ -98,5 +99,21 @@ describe("POST /api/answer", () => {
     const response = await post({ dayKey: DAY, questionId: q.id, answer: "hi" });
     expect(response.status).toBe(502);
     expect(await response.json()).toMatchObject({ error: { code: "provider_unavailable" } });
+  });
+
+  it("returns 502 invalid_key when getProvider itself throws ProviderError(auth)", async () => {
+    jest.resetModules();
+    const { ProviderError } = await import("@/lib/llm/errors");
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+    jest.doMock("@/lib/llm/provider", () => ({
+      getProvider: () => {
+        throw new ProviderError("auth");
+      },
+    }));
+    const q = word.topics[0].questions[0];
+    const response = await post({ dayKey: DAY, questionId: q.id, answer: "hi" });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ error: { code: "invalid_key" } });
+    jest.restoreAllMocks();
   });
 });

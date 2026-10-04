@@ -13,7 +13,12 @@ import {
 
 const MAX_TOKENS = 16000;
 
+// An API key is printable ASCII; anything else (a pasted newline, an em dash) would make the SDK
+// throw a TypeError that quotes the key. Reject it as a bad key instead.
+const API_KEY_PATTERN = /^[\x21-\x7E]+$/;
+
 export function createAnthropicClient(apiKey: string): Anthropic {
+  if (!API_KEY_PATTERN.test(apiKey)) throw new ProviderError("auth");
   return new Anthropic({ apiKey });
 }
 
@@ -78,7 +83,7 @@ export function createAnthropicProvider({ client, model }: { client: Anthropic; 
 
 export async function testKey(client: Anthropic, model: string): Promise<void> {
   try {
-    await client.models.retrieve(model);
+    await client.models.retrieve(model, {}, { timeout: 15_000, maxRetries: 0 });
   } catch (error) {
     throw toProviderError(error);
   }

@@ -22,6 +22,7 @@ export async function GET(): Promise<Response> {
     return Response.json(sanitizeWord(word));
   } catch (error) {
     if (error instanceof ProviderError) {
+      console.error(error.cause ?? error);
       const { code, message } = PROVIDER_ERRORS[error.reason];
       return errorResponse(502, code, message);
     }

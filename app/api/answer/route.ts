@@ -28,6 +28,11 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(await questionService().answer(parsed.data));
   } catch (error) {
     if (error instanceof NotFoundError) return errorResponse(404, "not_found", error.message);
+    if (error instanceof ProviderError) {
+      console.error(error.cause ?? error);
+      const { code, message } = PROVIDER_ERRORS[error.reason];
+      return errorResponse(502, code, message);
+    }
     if (error instanceof GradingError) {
       console.error(error.cause ?? error);
       if (error.cause instanceof ProviderError) {

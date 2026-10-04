@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import Anthropic from "@anthropic-ai/sdk";
-import { createAnthropicProvider, testKey } from "./anthropic";
+import { createAnthropicClient, createAnthropicProvider, testKey } from "./anthropic";
 import { ProviderError, type ProviderFailure } from "./errors";
 import type { GenerateWordInput, GradeAnswerInput } from "./types";
 
@@ -129,7 +129,7 @@ describe("testKey", () => {
     const { client, retrieve } = fakeClient();
     retrieve.mockResolvedValue({});
     await expect(testKey(client, MODEL)).resolves.toBeUndefined();
-    expect(retrieve).toHaveBeenCalledWith(MODEL);
+    expect(retrieve).toHaveBeenCalledWith(MODEL, {}, { timeout: 15_000, maxRetries: 0 });
   });
 
   it("maps AuthenticationError to ProviderError auth", async () => {
@@ -138,5 +138,27 @@ describe("testKey", () => {
     const promise = testKey(client, MODEL);
     await expect(promise).rejects.toBeInstanceOf(ProviderError);
     await expect(promise).rejects.toMatchObject({ reason: "auth" });
+  });
+});
+
+describe("createAnthropicClient", () => {
+  it.each([
+    ["a newline", "sk-ant-x\ny"],
+    ["an em dash", "sk-ant-x\u2014y"],
+  ])("rejects a key with %s as ProviderError auth without leaking it", (_name, key) => {
+    let thrown: unknown;
+    try {
+      createAnthropicClient(key);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(ProviderError);
+    expect(thrown).toMatchObject({ reason: "auth" });
+    expect((thrown as Error).message).not.toContain(key);
+    expect((thrown as Error).message).not.toContain("sk-ant");
+  });
+
+  it("returns an Anthropic client for a printable key", () => {
+    expect(createAnthropicClient("sk-ant-ok")).toBeInstanceOf(Anthropic);
   });
 });
