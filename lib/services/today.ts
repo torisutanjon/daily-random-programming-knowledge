@@ -62,6 +62,8 @@ export function createTodayService(deps: TodayDeps): TodayService {
   const { repo, getProvider, now, rng } = deps;
   // In-flight generations, keyed by dayKey: concurrent callers share one promise.
   const inFlight = new Map<string, Promise<Word>>();
+  // Generations run one at a time, so each sees the terms saved by the one before it.
+  let queue: Promise<unknown> = Promise.resolve();
 
   async function generate(dayKey: string, settings: Settings): Promise<Word> {
     const existing = await repo.getWord(dayKey);
@@ -110,7 +112,8 @@ export function createTodayService(deps: TodayDeps): TodayService {
       const dayKey = currentDayKey(now(), settings.notifyTime);
       const pending = inFlight.get(dayKey);
       if (pending) return pending;
-      const promise = generate(dayKey, settings).finally(() => inFlight.delete(dayKey));
+      const promise = queue.then(() => generate(dayKey, settings)).finally(() => inFlight.delete(dayKey));
+      queue = promise.catch(() => undefined); // a failure must not block later generations
       inFlight.set(dayKey, promise);
       return promise;
     },

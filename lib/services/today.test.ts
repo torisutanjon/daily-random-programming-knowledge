@@ -156,4 +156,56 @@ describe("getToday — retry and typed errors", () => {
     await expect(service.getToday()).rejects.toBeInstanceOf(GenerationError);
     await expect(service.getToday()).resolves.toMatchObject({ term: "Later" });
   });
+
+  it("reports the last failure when the failures differ", async () => {
+    await seedMvcc();
+    const { service, stub } = makeService({ results: [invalid, validWord("  mvcc ")] });
+    const error = await service.getToday().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GenerationError);
+    expect((error as GenerationError).reason).toBe("repeat");
+    expect(stub.calls()).toBe(2);
+  });
+});
+
+describe("getToday — generations are serialized", () => {
+  it("makes a later day see the term saved by an earlier in-flight generation", async () => {
+    let clock = new Date(2026, 9, 3, 10, 0);
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const later = [validWord("MVCC"), validWord("Fresh")];
+    let count = 0;
+    const llm: LlmProvider = {
+      async generateWord() {
+        count += 1;
+        if (count === 1) {
+          await gate;
+          return validWord("MVCC");
+        }
+        return later[count - 2];
+      },
+      async gradeAnswer() {
+        throw new Error("unused");
+      },
+    };
+    const service = createTodayService({
+      repo: createRepo(dir),
+      getProvider: () => ({ llm, name: "fake" }),
+      now: () => clock,
+      rng: () => 0,
+    });
+
+    const first = service.getToday();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    clock = new Date(2026, 9, 4, 10, 0);
+    const second = service.getToday();
+    release();
+
+    const [a, b] = await Promise.all([first, second]);
+    expect(a.term).toBe("MVCC");
+    expect(a.dayKey).toBe("2026-10-03");
+    expect(b.term).toBe("Fresh");
+    expect(b.dayKey).toBe("2026-10-04");
+  });
 });
