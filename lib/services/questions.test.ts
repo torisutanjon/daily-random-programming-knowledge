@@ -1,14 +1,14 @@
 /**
  * @jest-environment node
  */
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { QuestionStatus, Word } from "../domain/types";
 import type { GradeAnswerInput, LlmProvider } from "../llm/types";
 import { createRepo, type Repo } from "../store/repo";
 import { makeWord } from "../test-utils/word";
-import { createQuestionService, NotFoundError, type QuestionService } from "./questions";
+import { createQuestionService, GradingError, NotFoundError, type QuestionService } from "./questions";
 
 const NOW = new Date("2026-10-04T14:00:00.000Z");
 const DAY = "2026-10-01";
@@ -111,5 +111,67 @@ describe("answer", () => {
     await expect(service.answer({ dayKey: "2026-09-30", questionId: word.topics[0].questions[0].id, answer: "a" })).rejects.toBeInstanceOf(NotFoundError);
     await expect(service.answer({ dayKey: DAY, questionId: "nope", answer: "a" })).rejects.toBeInstanceOf(NotFoundError);
     expect(stub.calls()).toBe(0);
+  });
+});
+
+describe("answer — failures and concurrency", () => {
+  const file = (): string => path.join(dir, "words", `${DAY}.json`);
+
+  it("wraps a provider error in GradingError and writes nothing", async () => {
+    const cause = new Error("network");
+    const { service, word } = await setup([cause]);
+    const before = await readFile(file(), "utf8");
+    const error = await service.answer({ dayKey: DAY, questionId: word.topics[0].questions[0].id, answer: "a" }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GradingError);
+    expect((error as GradingError).reason).toBe("provider");
+    expect((error as GradingError).cause).toBe(cause);
+    expect(await readFile(file(), "utf8")).toBe(before);
+  });
+
+  it("rejects an invalid grade with GradingError and writes nothing", async () => {
+    const { service, word } = await setup([{ verdict: "maybe", feedback: "" }]);
+    const before = await readFile(file(), "utf8");
+    const error = await service.answer({ dayKey: DAY, questionId: word.topics[0].questions[0].id, answer: "a" }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GradingError);
+    expect((error as GradingError).reason).toBe("invalid_output");
+    expect(await readFile(file(), "utf8")).toBe(before);
+  });
+
+  it("keeps both attempts when two answers to one word run concurrently", async () => {
+    const realRepo = createRepo(dir);
+    const word = makeWord(DAY);
+    await realRepo.saveWord(word);
+    const repo: Repo = {
+      ...realRepo,
+      getWord: async (dayKey) => {
+        const found = await realRepo.getWord(dayKey);
+        await new Promise((resolve) => setImmediate(resolve));
+        return found;
+      },
+    };
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    const llm: LlmProvider = {
+      async generateWord() {
+        throw new Error("unused");
+      },
+      async gradeAnswer() {
+        calls++;
+        await gate;
+        return { verdict: "pass", feedback: "Good." };
+      },
+    };
+    const service = createQuestionService({ repo, getProvider: () => ({ llm, name: "fake" }), now: () => NOW });
+    const first = service.answer({ dayKey: DAY, questionId: word.topics[0].questions[0].id, answer: "a" });
+    const second = service.answer({ dayKey: DAY, questionId: word.topics[1].questions[0].id, answer: "b" });
+    while (calls < 2) await new Promise((resolve) => setImmediate(resolve));
+    release();
+    await Promise.all([first, second]);
+    const stored = (await realRepo.getWord(DAY))!;
+    expect(stored.topics[0].questions[0].attempts).toHaveLength(1);
+    expect(stored.topics[1].questions[0].attempts).toHaveLength(1);
   });
 });

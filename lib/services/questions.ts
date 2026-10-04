@@ -12,6 +12,18 @@ export class NotFoundError extends Error {
   }
 }
 
+export type GradingFailure = "provider" | "invalid_output";
+
+export class GradingError extends Error {
+  readonly reason: GradingFailure;
+
+  constructor(reason: GradingFailure, options?: { cause?: unknown }) {
+    super(reason === "provider" ? "Grading failed" : "The grader returned an invalid result", options);
+    this.name = "GradingError";
+    this.reason = reason;
+  }
+}
+
 export interface QuestionDeps {
   repo: Repo;
   getProvider(settings: Settings): { llm: LlmProvider; name: Word["provider"] };
@@ -47,17 +59,39 @@ async function loadWord(repo: Repo, dayKey: string): Promise<Word> {
 
 export function createQuestionService(deps: QuestionDeps): QuestionService {
   const { repo, getProvider, now } = deps;
+  // Writes to one word run one at a time, so concurrent answers never overwrite each other.
+  const locks = new Map<string, Promise<unknown>>();
+  function withWordLock<T>(dayKey: string, fn: () => Promise<T>): Promise<T> {
+    const previous = locks.get(dayKey) ?? Promise.resolve();
+    const run = previous.then(fn);
+    const tail = run.catch(() => undefined); // a failure never blocks the next writer
+    locks.set(dayKey, tail);
+    void tail.then(() => {
+      if (locks.get(dayKey) === tail) locks.delete(dayKey);
+    });
+    return run;
+  }
   return {
     async answer({ dayKey, questionId, answer }) {
       const question = findQuestion(await loadWord(repo, dayKey), questionId);
       const { llm } = getProvider(await repo.getSettings());
-      const grade = gradeSchema.parse(await llm.gradeAnswer({ prompt: question.prompt, rubric: question.rubric, answer }));
-      const word = await loadWord(repo, dayKey);
-      const current = findQuestion(word, questionId);
-      current.attempts.push({ answer, verdict: grade.verdict, feedback: grade.feedback, at: now().toISOString() });
-      current.status = applyVerdict(current.status, grade.verdict);
-      await repo.saveWord(word);
-      return sanitizeQuestion(current);
+      let raw: unknown;
+      try {
+        raw = await llm.gradeAnswer({ prompt: question.prompt, rubric: question.rubric, answer });
+      } catch (cause) {
+        throw new GradingError("provider", { cause });
+      }
+      const parsed = gradeSchema.safeParse(raw);
+      if (!parsed.success) throw new GradingError("invalid_output");
+      const grade = parsed.data;
+      return withWordLock(dayKey, async () => {
+        const word = await loadWord(repo, dayKey);
+        const current = findQuestion(word, questionId);
+        current.attempts.push({ answer, verdict: grade.verdict, feedback: grade.feedback, at: now().toISOString() });
+        current.status = applyVerdict(current.status, grade.verdict);
+        await repo.saveWord(word);
+        return sanitizeQuestion(current);
+      });
     },
     async reveal() {
       throw new Error("Not implemented");
