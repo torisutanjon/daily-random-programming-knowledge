@@ -3,7 +3,8 @@ import { sanitizeQuestion, type PublicQuestion } from "../domain/sanitize";
 import { applyVerdict } from "../domain/status";
 import type { Question, Word } from "../domain/types";
 import { gradeSchema, type LlmProvider } from "../llm/types";
-import type { Repo } from "../store/repo";
+import { getProvider } from "../llm/provider";
+import { createRepo, getDataDir, type Repo } from "../store/repo";
 
 export class NotFoundError extends Error {
   constructor(message: "Word not found" | "Question not found") {
@@ -93,8 +94,25 @@ export function createQuestionService(deps: QuestionDeps): QuestionService {
         return sanitizeQuestion(current);
       });
     },
-    async reveal() {
-      throw new Error("Not implemented");
+    reveal({ dayKey, questionId }) {
+      return withWordLock(dayKey, async () => {
+        const word = await loadWord(repo, dayKey);
+        const question = findQuestion(word, questionId);
+        if (question.status !== "revealed") {
+          question.status = "revealed";
+          question.revealedAt = now().toISOString();
+          await repo.saveWord(word);
+        }
+        return sanitizeQuestion(question);
+      });
     },
   };
+}
+
+let instance: QuestionService | undefined;
+
+/** One service per server process, shared by /api/answer and /api/reveal so they share one write lock. */
+export function questionService(): QuestionService {
+  instance ??= createQuestionService({ repo: createRepo(getDataDir()), getProvider, now: () => new Date() });
+  return instance;
 }

@@ -8,7 +8,7 @@ import type { QuestionStatus, Word } from "../domain/types";
 import type { GradeAnswerInput, LlmProvider } from "../llm/types";
 import { createRepo, type Repo } from "../store/repo";
 import { makeWord } from "../test-utils/word";
-import { createQuestionService, GradingError, NotFoundError, type QuestionService } from "./questions";
+import { createQuestionService, GradingError, NotFoundError, questionService, type QuestionService } from "./questions";
 
 const NOW = new Date("2026-10-04T14:00:00.000Z");
 const DAY = "2026-10-01";
@@ -173,5 +173,96 @@ describe("answer — failures and concurrency", () => {
     const stored = (await realRepo.getWord(DAY))!;
     expect(stored.topics[0].questions[0].attempts).toHaveLength(1);
     expect(stored.topics[1].questions[0].attempts).toHaveLength(1);
+  });
+});
+
+describe("reveal", () => {
+  const file = (): string => path.join(dir, "words", `${DAY}.json`);
+
+  it("reveals a question and exposes its rubric and model answer", async () => {
+    const { repo, service, word } = await setup([]);
+    const q = word.topics[0].questions[0];
+    const result = await service.reveal({ dayKey: DAY, questionId: q.id });
+    expect(result.status).toBe("revealed");
+    expect(result.revealedAt).toBe(NOW.toISOString());
+    expect(result.rubric).toEqual(q.rubric);
+    expect(result.modelAnswer).toBe(q.modelAnswer);
+    const stored = (await repo.getWord(DAY))!.topics[0].questions[0];
+    expect(stored.status).toBe("revealed");
+    expect(stored.revealedAt).toBe(NOW.toISOString());
+  });
+
+  it("keeps the first revealedAt and writes nothing on a second reveal", async () => {
+    const { repo, service, word } = await setup([]);
+    const questionId = word.topics[0].questions[0].id;
+    await service.reveal({ dayKey: DAY, questionId });
+    const before = await readFile(file(), "utf8");
+    const later = createQuestionService({
+      repo,
+      getProvider: () => ({ llm: stubGrader([]).llm, name: "fake" }),
+      now: () => new Date("2026-10-05T09:00:00.000Z"),
+    });
+    const result = await later.reveal({ dayKey: DAY, questionId });
+    expect(result.revealedAt).toBe(NOW.toISOString());
+    expect(await readFile(file(), "utf8")).toBe(before);
+  });
+
+  it("persists both a reveal and a concurrent answer on the other question", async () => {
+    const realRepo = createRepo(dir);
+    const word = makeWord(DAY);
+    await realRepo.saveWord(word);
+    const repo: Repo = {
+      ...realRepo,
+      getWord: async (dayKey) => {
+        const found = await realRepo.getWord(dayKey);
+        await new Promise((resolve) => setImmediate(resolve));
+        return found;
+      },
+    };
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    const llm: LlmProvider = {
+      async generateWord() {
+        throw new Error("unused");
+      },
+      async gradeAnswer() {
+        calls++;
+        await gate;
+        return { verdict: "pass", feedback: "Good." };
+      },
+    };
+    const service = createQuestionService({ repo, getProvider: () => ({ llm, name: "fake" }), now: () => NOW });
+    const answering = service.answer({ dayKey: DAY, questionId: word.topics[0].questions[0].id, answer: "a" });
+    while (calls < 1) await new Promise((resolve) => setImmediate(resolve));
+    const revealing = service.reveal({ dayKey: DAY, questionId: word.topics[1].questions[0].id });
+    await new Promise((resolve) => setImmediate(resolve));
+    release();
+    await Promise.all([answering, revealing]);
+    const stored = (await realRepo.getWord(DAY))!;
+    expect(stored.topics[0].questions[0].attempts).toHaveLength(1);
+    expect(stored.topics[1].questions[0].status).toBe("revealed");
+  });
+
+  it("rejects an unknown day or question with NotFoundError", async () => {
+    const { service, word } = await setup([]);
+    await expect(service.reveal({ dayKey: "2026-09-30", questionId: word.topics[0].questions[0].id })).rejects.toBeInstanceOf(NotFoundError);
+    await expect(service.reveal({ dayKey: DAY, questionId: "nope" })).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("leaves the other question untouched", async () => {
+    const { repo, service, word } = await setup([]);
+    await service.reveal({ dayKey: DAY, questionId: word.topics[0].questions[0].id });
+    const other = (await repo.getWord(DAY))!.topics[1].questions[0];
+    expect(other.status).toBe("unanswered");
+    expect(other.attempts).toEqual([]);
+  });
+});
+
+describe("questionService", () => {
+  it("is a per-process singleton", () => {
+    expect(questionService()).toBe(questionService());
   });
 });
