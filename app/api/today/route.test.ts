@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { currentDayKey } from "@/lib/domain/day";
+import { defaultSettings } from "@/lib/domain/settings";
 
 let dir: string;
 
@@ -12,9 +13,26 @@ beforeEach(async () => {
   dir = await mkdtemp(path.join(os.tmpdir(), "drpk-route-"));
   process.env.DATA_DIR = dir;
   jest.resetModules();
+  // Fake only Date, so todayKey() and the route agree on the day.
+  jest.useFakeTimers({
+    now: new Date(2026, 9, 4, 12, 0),
+    doNotFake: [
+      "nextTick",
+      "setImmediate",
+      "clearImmediate",
+      "setTimeout",
+      "clearTimeout",
+      "setInterval",
+      "clearInterval",
+      "queueMicrotask",
+      "hrtime",
+      "performance",
+    ],
+  });
 });
 
 afterEach(async () => {
+  jest.useRealTimers();
   delete process.env.DATA_DIR;
   await rm(dir, { recursive: true, force: true });
 });
@@ -24,7 +42,7 @@ async function loadGet(): Promise<() => Promise<Response>> {
 }
 
 function todayKey(): string {
-  return currentDayKey(new Date(), "09:00");
+  return currentDayKey(new Date(), defaultSettings().notifyTime);
 }
 
 interface Body {
