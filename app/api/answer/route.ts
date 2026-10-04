@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROVIDER_ERRORS, ProviderError } from "@/lib/llm/errors";
 import { GradingError, NotFoundError, questionService } from "@/lib/services/questions";
 import { CorruptFileError } from "@/lib/store/repo";
 
@@ -29,6 +30,10 @@ export async function POST(request: Request): Promise<Response> {
     if (error instanceof NotFoundError) return errorResponse(404, "not_found", error.message);
     if (error instanceof GradingError) {
       console.error(error.cause ?? error);
+      if (error.cause instanceof ProviderError) {
+        const { code, message } = PROVIDER_ERRORS[error.cause.reason];
+        return errorResponse(502, code, message);
+      }
       return errorResponse(502, error.reason === "provider" ? "grading_failed" : "invalid_grade", error.message);
     }
     if (error instanceof CorruptFileError) return errorResponse(500, "corrupt_file", error.message);

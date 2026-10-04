@@ -81,4 +81,22 @@ describe("POST /api/answer", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toMatchObject({ error: { code: "not_found" } });
   });
+
+  it("returns 502 provider_unavailable when provider.gradeAnswer throws ProviderError(unavailable)", async () => {
+    jest.resetModules();
+    const { ProviderError } = await import("@/lib/llm/errors");
+    jest.doMock("@/lib/llm/provider", () => ({
+      getProvider: () => ({
+        name: "anthropic",
+        llm: {
+          generateWord: jest.fn(),
+          gradeAnswer: () => Promise.reject(new ProviderError("unavailable")),
+        },
+      }),
+    }));
+    const q = word.topics[0].questions[0];
+    const response = await post({ dayKey: DAY, questionId: q.id, answer: "hi" });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ error: { code: "provider_unavailable" } });
+  });
 });
