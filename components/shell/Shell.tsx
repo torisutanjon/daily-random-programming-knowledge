@@ -2,6 +2,7 @@ import type { ShellData } from "@/lib/ui/shell";
 import TitleBar from "@/components/shell/TitleBar";
 import Nav from "@/components/shell/Nav";
 import RightPanel from "@/components/shell/RightPanel";
+import RefreshOnFocus from "@/components/shell/RefreshOnFocus";
 
 export default function Shell({
   data,
@@ -12,6 +13,7 @@ export default function Shell({
 }): React.ReactElement {
   return (
     <div className="h-screen min-h-[640px] flex flex-col bg-canvas overflow-hidden">
+      <RefreshOnFocus />
       <TitleBar data={data} />
       <div className="flex-1 flex min-h-0">
         <Nav data={data} />

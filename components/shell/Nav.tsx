@@ -30,6 +30,7 @@ export default function Nav({ data }: { data: ShellData }): React.ReactElement {
         <Link
           key={item.href}
           href={item.href}
+          aria-current={item.active ? "page" : undefined}
           className={`flex items-center justify-between px-2.5 py-[7px] rounded-md text-sm hover:bg-hover hover:text-ink ${
             item.active ? "bg-active text-ink-strong" : "text-ink-muted"
           }`}

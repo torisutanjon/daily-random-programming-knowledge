@@ -2,7 +2,10 @@ import { render, screen, within } from "@testing-library/react";
 import type { ShellData } from "@/lib/ui/shell";
 import Shell from "@/components/shell/Shell";
 
-jest.mock("next/navigation", () => ({ usePathname: jest.fn(() => "/") }));
+jest.mock("next/navigation", () => ({
+  usePathname: jest.fn(() => "/"),
+  useRouter: () => ({ refresh: jest.fn() }),
+}));
 
 function makeData(overrides: Partial<ShellData> = {}): ShellData {
   return {
