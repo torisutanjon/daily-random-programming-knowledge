@@ -3,52 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { PublicQuestion, PublicWord } from "@/lib/domain/sanitize";
-import { topicStatus, type TopicStatus } from "@/lib/domain/status";
-import type { QuestionStatus } from "@/lib/domain/types";
+import { topicStatus } from "@/lib/domain/status";
 import { areaLabel, formatLongDate, progressSummary, questionStatuses } from "@/lib/ui/word";
 import QuestionCard from "@/components/word/QuestionCard";
-
-const SEGMENT: Record<QuestionStatus, string> = {
-  learned: "bg-pass",
-  revealed: "bg-revealed",
-  partial: "bg-partial",
-  unanswered: "bg-active",
-};
-
-function TopicIcon({ status }: { status: TopicStatus }): React.JSX.Element {
-  const box = "flex h-4 w-4 flex-none items-center justify-center rounded-[4px] box-border";
-  if (status === "learned") {
-    return (
-      <span data-status={status} className={`${box} bg-pass text-on-accent`}>
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
-          <polyline
-            points="2,5.2 4.2,7.2 8,2.8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-    );
-  }
-  if (status === "in-progress") {
-    return (
-      <span data-status={status} className={`${box} border-[1.5px] border-partial`}>
-        <span className="h-1.5 w-1.5 rounded-[1.5px] bg-partial" />
-      </span>
-    );
-  }
-  if (status === "revealed") {
-    return (
-      <span data-status={status} className={`${box} border-[1.5px] border-revealed`}>
-        <span className="h-1.5 w-1.5 rounded-full bg-revealed" />
-      </span>
-    );
-  }
-  return <span data-status={status} className={`${box} border-[1.5px] border-ink-dim`} />;
-}
+import { SEGMENT_CLASS, StatusIcon } from "@/components/word/StatusIcon";
 
 function Legend(): React.JSX.Element {
   return (
@@ -143,7 +101,7 @@ export default function WordView({
                   key={i}
                   data-segment
                   data-status={status}
-                  className={`h-[5px] w-3.5 rounded-[2px] ${SEGMENT[status]}`}
+                  className={`h-[5px] w-3.5 rounded-[2px] ${SEGMENT_CLASS[status]}`}
                 />
               ))}
             </div>
@@ -169,7 +127,7 @@ export default function WordView({
                   onClick={() => toggle(topic.id)}
                   className="flex w-full items-center gap-3 rounded-md px-1.5 py-[13px] text-left hover:bg-card"
                 >
-                  <TopicIcon status={status} />
+                  <StatusIcon status={status} />
                   <span className={`flex-1 text-base leading-snug ${finished ? "text-ink-muted" : "text-ink-strong"}`}>
                     {topic.title}
                   </span>
