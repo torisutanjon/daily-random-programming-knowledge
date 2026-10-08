@@ -23,6 +23,7 @@ interface Schedule {
 
 const MIN_MS = 1_000;
 const MAX_MS = 60_000;
+const MAX_ATTEMPTS = 3;
 const FAILURE_TOAST = "Couldn't fetch today's word — open to retry";
 
 export function createScheduler(deps: SchedulerDeps): Scheduler {
@@ -30,6 +31,7 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
   let timer: unknown = null;
   let lastHandledDayKey: string | null = null;
   let appliedLaunch: boolean | null = null;
+  let failures = { dayKey: "", count: 0 };
 
   function clear(): void {
     if (timer !== null) deps.clearTimer(timer);
@@ -80,12 +82,24 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
         }
       }
       if (!schedule.hasWord && schedule.dayKey !== lastHandledDayKey) {
-        lastHandledDayKey = schedule.dayKey;
         const term = await generate();
-        try {
-          deps.notify(term === null ? FAILURE_TOAST : `Today's word: ${term}`);
-        } catch {
-          // a failing toast must not stop the scheduler
+        let body: string | null = null;
+        if (term !== null) {
+          body = `Today's word: ${term}`;
+        } else {
+          failures = {
+            dayKey: schedule.dayKey,
+            count: (failures.dayKey === schedule.dayKey ? failures.count : 0) + 1,
+          };
+          if (failures.count >= MAX_ATTEMPTS) body = FAILURE_TOAST;
+        }
+        if (body !== null) {
+          lastHandledDayKey = schedule.dayKey;
+          try {
+            deps.notify(body);
+          } catch {
+            // a failing toast must not stop the scheduler
+          }
         }
       }
     } finally {

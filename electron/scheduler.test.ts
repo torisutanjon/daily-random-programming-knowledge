@@ -92,13 +92,33 @@ describe("createScheduler", () => {
     expect(t.notify).toHaveBeenCalledTimes(2);
   });
 
-  it("generation failure toasts once and is not retried", async () => {
+  it("generation failure retries up to 3 times and toasts once", async () => {
     const t = setup({ todayFails: true });
+    for (let i = 0; i < 2; i++) await t.scheduler.check();
+    expect(t.notify).not.toHaveBeenCalled();
+    for (let i = 0; i < 2; i++) await t.scheduler.check();
+    expect(calls(t.fetchMock, "/api/today")).toBe(3);
+    expect(t.notify).toHaveBeenCalledTimes(1);
+    expect(t.notify).toHaveBeenCalledWith("Couldn't fetch today's word — open to retry");
+  });
+
+  it("a retry that succeeds toasts the word, no failure toast", async () => {
+    const t = setup({ todayFails: true });
+    await t.scheduler.check();
+    t.state.todayFails = false;
     await t.scheduler.check();
     await t.scheduler.check();
     expect(t.notify).toHaveBeenCalledTimes(1);
-    expect(t.notify).toHaveBeenCalledWith("Couldn't fetch today's word — open to retry");
+    expect(t.notify).toHaveBeenCalledWith("Today's word: MVCC");
+  });
+
+  it("the word appearing between retries stops retrying", async () => {
+    const t = setup({ todayFails: true });
+    await t.scheduler.check();
+    t.schedule.hasWord = true;
+    await t.scheduler.check();
     expect(calls(t.fetchMock, "/api/today")).toBe(1);
+    expect(t.notify).not.toHaveBeenCalled();
   });
 
   it("timer arms for nextFireAt when under a minute", async () => {
