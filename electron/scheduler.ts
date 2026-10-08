@@ -38,7 +38,7 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
 
   function arm(ms: number): void {
     clear();
-    timer = deps.setTimer(() => void check(), Math.min(MAX_MS, Math.max(MIN_MS, ms)));
+    timer = deps.setTimer(() => void check(), Number.isFinite(ms) ? Math.min(MAX_MS, Math.max(MIN_MS, ms)) : MAX_MS);
   }
 
   async function getSchedule(): Promise<Schedule | null> {

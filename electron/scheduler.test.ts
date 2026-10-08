@@ -121,6 +121,13 @@ describe("createScheduler", () => {
     expect(t.lastDelay()).toBe(1_000);
   });
 
+  it("unparseable nextFireAt waits 60 s", async () => {
+    const t = setup();
+    t.schedule.nextFireAt = "garbage";
+    await t.scheduler.check();
+    expect(t.lastDelay()).toBe(60_000);
+  });
+
   it("schedule failure re-arms at 60 s without toasting", async () => {
     const t = setup({ scheduleFails: true });
     await t.scheduler.check();
