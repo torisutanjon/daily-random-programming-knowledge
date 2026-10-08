@@ -1,6 +1,16 @@
 import path from "node:path";
 import type { UtilityProcess } from "electron";
-import { app, BrowserWindow, dialog, Menu, Notification, Tray, utilityProcess } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  Menu,
+  Notification,
+  powerMonitor,
+  Tray,
+  utilityProcess,
+} from "electron";
+import { createScheduler, type Scheduler } from "./scheduler";
 import { getFreePort, standaloneServerPath, waitForServer } from "./server";
 
 const APP_ID = "com.drpk.app";
@@ -15,6 +25,11 @@ if (!gotLock) {
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let server: UtilityProcess | null = null;
+let scheduler: Scheduler | null = null;
+let quitting = false;
+const liveNotifications = new Set<Notification>();
+const MAX_LIVE_NOTIFICATIONS = 10;
+const startHidden = process.argv.includes("--hidden");
 
 function getIconPath(): string {
   return path.join(app.getAppPath(), "electron", "assets", "icon.ico");
@@ -52,13 +67,29 @@ async function createWindow(url: string): Promise<void> {
   });
 
   mainWindow.once("ready-to-show", () => {
-    mainWindow?.show();
+    if (!startHidden) {
+      mainWindow?.show();
+    }
+  });
+
+  mainWindow.on("close", (e) => {
+    if (!quitting) {
+      e.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
+  mainWindow.on("query-session-end", () => {
+    quitting = true;
+  });
+  mainWindow.on("session-end", () => {
+    quitting = true;
   });
 
   await mainWindow.loadURL(url);
 }
 
-function createTray(url: string): void {
+function createTray(): void {
   const icon = getIconPath();
   tray = new Tray(icon);
   tray.setToolTip("drpk");
@@ -67,11 +98,7 @@ function createTray(url: string): void {
     {
       label: "Open",
       click: () => {
-        if (mainWindow === null || mainWindow.isDestroyed()) {
-          void createWindow(url);
-        } else {
-          showMainWindow();
-        }
+        showMainWindow();
       },
     },
     {
@@ -84,11 +111,7 @@ function createTray(url: string): void {
   tray.setContextMenu(contextMenu);
 
   tray.on("click", () => {
-    if (mainWindow === null || mainWindow.isDestroyed()) {
-      void createWindow(url);
-    } else {
-      showMainWindow();
-    }
+    showMainWindow();
   });
 }
 
@@ -138,18 +161,55 @@ app.whenReady().then(async () => {
     return;
   }
 
-  await createWindow(url);
-  createTray(url);
+  const notify = (body: string): void => {
+    if (!Notification.isSupported()) {
+      return;
+    }
+    const n = new Notification({ title: "drpk", body });
+    n.on("click", () => {
+      liveNotifications.delete(n);
+      showMainWindow();
+      mainWindow?.loadURL(url).catch(() => {});
+    });
+    n.on("close", (details) => {
+      if (details.reason !== "timedOut") liveNotifications.delete(n);
+    });
+    liveNotifications.add(n);
+    while (liveNotifications.size > MAX_LIVE_NOTIFICATIONS) {
+      const oldest = liveNotifications.values().next().value;
+      if (oldest === undefined) break;
+      liveNotifications.delete(oldest);
+    }
+    n.show();
+  };
 
-  if (Notification.isSupported()) {
-    new Notification({ title: "drpk", body: "drpk is running" }).show();
-  }
+  const applyLaunchAtLogin = (on: boolean): void => {
+    if (app.isPackaged) {
+      app.setLoginItemSettings({ openAtLogin: on, args: ["--hidden"] });
+    }
+  };
+
+  scheduler = createScheduler({
+    baseUrl: url,
+    fetch,
+    now: Date.now,
+    setTimer: setTimeout,
+    clearTimer: (h) => clearTimeout(h as NodeJS.Timeout),
+    notify,
+    applyLaunchAtLogin,
+  });
+  scheduler.start();
+  powerMonitor.on("resume", () => void scheduler?.check());
+
+  await createWindow(url);
+  createTray();
 });
 
-app.on("window-all-closed", () => {
-  app.quit();
+app.on("before-quit", () => {
+  quitting = true;
 });
 
 app.on("will-quit", () => {
+  scheduler?.stop();
   server?.kill();
 });
