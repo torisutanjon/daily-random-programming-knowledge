@@ -56,6 +56,7 @@ describe("SettingsView", () => {
     fireEvent.change(screen.getByLabelText("Notify time"), {
       target: { value: "07:30" },
     });
+    fireEvent.blur(screen.getByLabelText("Notify time"));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(lastPut()).toEqual({ notifyTime: "07:30" });
     expect(screen.getByText("Saved")).toBeInTheDocument();
@@ -276,6 +277,69 @@ describe("SettingsView", () => {
     await screen.findByText("Key rejected. Check it was copied in full.");
     await userEvent.click(screen.getByRole("button", { name: "Remove key" }));
     await screen.findByText("No key — the app runs in demo mode.");
+    expect(
+      screen.queryByText("Key rejected. Check it was copied in full."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("a response doesn't overwrite edits still queued", async () => {
+    const resolvers: ((v: unknown) => void)[] = [];
+    fetchMock().mockImplementation(
+      () => new Promise((r) => resolvers.push(r)),
+    );
+    render(<SettingsView initial={initial} />);
+    const a1 = AREA_IDS.filter((id) => id !== "security");
+    const a2 = a1.filter((id) => id !== "nextjs");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Security" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Next.js" }));
+    resolvers[0](ok({ ...initial, areas: a1 }));
+    await waitFor(() => expect(puts()).toHaveLength(2));
+    expect(screen.getByRole("checkbox", { name: "Next.js" })).not.toBeChecked();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Observability" }));
+    resolvers[1](ok({ ...initial, areas: a2 }));
+    await waitFor(() => expect(puts()).toHaveLength(3));
+    expect(lastPut()).toEqual({
+      areas: a2.filter((id) => id !== "observability"),
+    });
+  });
+
+  it("a failed save drops the saves queued behind it", async () => {
+    const resolvers: ((v: unknown) => void)[] = [];
+    fetchMock().mockImplementation(
+      () => new Promise((r) => resolvers.push(r)),
+    );
+    render(<SettingsView initial={initial} />);
+    await userEvent.click(screen.getByRole("checkbox", { name: "Security" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Next.js" }));
+    resolvers[0](fail(500, { error: { code: "internal", message: "x" } }));
+    expect(
+      await screen.findByText("Couldn't save — your change was undone."),
+    ).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(puts()).toHaveLength(1);
+    expect(screen.getByRole("checkbox", { name: "Security" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Next.js" })).toBeChecked();
+  });
+
+  it("notify time doesn't save until blur", async () => {
+    render(<SettingsView initial={initial} />);
+    fireEvent.change(screen.getByLabelText("Notify time"), {
+      target: { value: "07:30" },
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(puts()).toHaveLength(0);
+  });
+
+  it("changing the key input clears a stale test result", async () => {
+    fetchMock().mockResolvedValue(
+      fail(502, { error: { code: "invalid_key", message: "x" } }),
+    );
+    render(<SettingsView initial={initial} />);
+    const input = screen.getByLabelText("API key");
+    await userEvent.type(input, "sk-ant-bad");
+    await userEvent.click(screen.getByRole("button", { name: "Test key" }));
+    await screen.findByText("Key rejected. Check it was copied in full.");
+    await userEvent.type(input, "x");
     expect(
       screen.queryByText("Key rejected. Check it was copied in full."),
     ).not.toBeInTheDocument();

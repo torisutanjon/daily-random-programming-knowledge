@@ -68,11 +68,16 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
   const [keyTest, setKeyTest] = useState<KeyTest>({ kind: "idle" });
   const savedRef = useRef(initial);
   const queue = useRef<Promise<void>>(Promise.resolve());
+  const pending = useRef(0);
+  const generation = useRef(0);
 
   function save(patch: Patch): Promise<boolean> {
     if (!("apiKey" in patch)) setDraft((d) => ({ ...d, ...patch }));
+    const enqueuedIn = generation.current;
+    pending.current++;
     const run = queue.current.then(async (): Promise<boolean> => {
       try {
+        if (generation.current !== enqueuedIn) return false;
         const res = await fetch("/api/settings", {
           method: "PUT",
           headers: { "content-type": "application/json" },
@@ -81,15 +86,18 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
         if (!res.ok) throw new Error(String(res.status));
         const next = (await res.json()) as PublicSettings;
         savedRef.current = next;
-        setDraft(next);
+        if (pending.current === 1) setDraft(next);
         setStatus("saved");
         if ("apiKey" in patch) setKeyTest({ kind: "idle" });
         router.refresh();
         return true;
       } catch {
+        generation.current++;
         setDraft(savedRef.current);
         setStatus("error");
         return false;
+      } finally {
+        pending.current--;
       }
     });
     queue.current = run.then(() => undefined);
@@ -113,9 +121,9 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
   }
 
   function saveKey(): void {
-    const apiKey = keyInput;
+    const apiKey = keyInput.trim();
     void save({ apiKey }).then((saved) => {
-      if (saved) setKeyInput((k) => (k === apiKey ? "" : k));
+      if (saved) setKeyInput((k) => (k.trim() === apiKey ? "" : k));
     });
   }
 
@@ -126,7 +134,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
       const res = await fetch("/api/settings/test-key", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(keyInput ? { apiKey: keyInput } : {}),
+        body: JSON.stringify(keyInput.trim() ? { apiKey: keyInput.trim() } : {}),
       });
       if (res.ok) {
         setKeyTest({ kind: "ok", ms: performance.now() - started });
@@ -160,11 +168,13 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
           type="time"
           aria-label="Notify time"
           value={draft.notifyTime}
-          onChange={(e) =>
-            TIME.test(e.target.value)
-              ? save({ notifyTime: e.target.value })
-              : setDraft((d) => ({ ...d, notifyTime: e.target.value }))
-          }
+          onChange={(e) => setDraft((d) => ({ ...d, notifyTime: e.target.value }))}
+          onBlur={(e) => {
+            const value = e.target.value;
+            if (TIME.test(value) && value !== savedRef.current.notifyTime) {
+              void save({ notifyTime: value });
+            }
+          }}
           className={INPUT}
         />
       </Row>
@@ -175,7 +185,9 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
               key={l}
               type="button"
               aria-pressed={draft.level === l}
-              onClick={() => save({ level: l })}
+              onClick={() => {
+                if (draft.level !== l) save({ level: l });
+              }}
               className={`rounded-[5px] px-3 py-[5px] text-[13px] ${
                 draft.level === l ? "bg-control-line text-ink-strong" : "text-ink-soft"
               }`}
@@ -195,13 +207,14 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
                 className="accent-accent"
                 checked={draft.areas.includes(a.id)}
                 disabled={lastArea === a.id}
+                aria-describedby={lastArea === a.id ? "last-area-hint" : undefined}
                 onChange={() => toggleArea(a.id)}
               />
               {a.label}
             </label>
           ))}
         </div>
-        {lastArea && <div className="mt-2 text-[13px] text-ink-soft">At least one area stays on.</div>}
+        {lastArea && <div id="last-area-hint" className="mt-2 text-[13px] text-ink-soft">At least one area stays on.</div>}
       </Row>
       <Row title="Stack" help="Examples and questions lean on these." stacked>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -221,6 +234,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
           <input
             value={newTag}
             placeholder="Add… ⏎"
+            maxLength={40}
             aria-label="Add stack tag"
             onChange={(e) => setNewTag(e.target.value)}
             onKeyDown={(e) => {
@@ -247,15 +261,23 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
             spellCheck={false}
             placeholder="sk-ant-…"
             value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
+            onChange={(e) => {
+              setKeyInput(e.target.value);
+              setKeyTest({ kind: "idle" });
+            }}
             className={`${INPUT} min-w-0 flex-1`}
           />
-          {keyInput && (
+          {keyInput.trim() && (
             <button type="button" onClick={saveKey} className={BUTTON}>
               Save key
             </button>
           )}
-          <button type="button" onClick={() => void testKey()} className={BUTTON}>
+          <button
+            type="button"
+            disabled={keyTest.kind === "testing"}
+            onClick={() => void testKey()}
+            className={BUTTON}
+          >
             Test key
           </button>
           {draft.hasApiKey && (
@@ -264,6 +286,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
             </button>
           )}
         </div>
+        <div aria-live="polite">
         {keyTest.kind === "testing" && <div className="mt-2.5 text-[13.5px] text-ink-soft">Testing…</div>}
         {keyTest.kind === "ok" && (
           <div className="mt-2.5 text-[13.5px] text-pass">
@@ -271,12 +294,16 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
           </div>
         )}
         {keyTest.kind === "error" && <div className="mt-2.5 text-[13.5px] text-fail">{keyTest.message}</div>}
+        </div>
       </Row>
       <Row title="Model" help="Used for generating words and grading.">
         <select
           aria-label="Model"
           value={draft.model}
-          onChange={(e) => save({ model: e.target.value })}
+          onChange={(e) => {
+            setKeyTest({ kind: "idle" });
+            void save({ model: e.target.value });
+          }}
           className={INPUT}
         >
           {models.map((m) => (
