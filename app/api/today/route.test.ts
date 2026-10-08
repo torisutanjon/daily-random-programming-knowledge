@@ -32,6 +32,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  jest.dontMock("@/lib/llm/provider");
   jest.useRealTimers();
   delete process.env.DATA_DIR;
   await rm(dir, { recursive: true, force: true });
@@ -91,5 +92,23 @@ describe("GET /api/today", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toMatchObject({ error: { code: "corrupt_file" } });
     await expect(stat(`${file}.corrupt`)).resolves.toBeDefined();
+  });
+
+  it("returns 502 invalid_key when provider.generateWord throws ProviderError(auth)", async () => {
+    jest.resetModules();
+    const { ProviderError } = await import("@/lib/llm/errors");
+    jest.doMock("@/lib/llm/provider", () => ({
+      getProvider: () => ({
+        name: "anthropic",
+        llm: {
+          generateWord: () => Promise.reject(new ProviderError("auth")),
+          gradeAnswer: jest.fn(),
+        },
+      }),
+    }));
+    const GET = await loadGet();
+    const res = await GET();
+    expect(res.status).toBe(502);
+    expect(await res.json()).toMatchObject({ error: { code: "invalid_key" } });
   });
 });
