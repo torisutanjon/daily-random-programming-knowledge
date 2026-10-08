@@ -28,6 +28,7 @@
 }
 
 body {
+  color-scheme: dark;
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
