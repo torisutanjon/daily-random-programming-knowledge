@@ -47,7 +47,8 @@
       "target": "nsis"
     },
     "nsis": {
-      "oneClick": false
+      "oneClick": false,
+      "include": "electron/assets/installer.nsh"
     }
   },
   "dependencies": {
