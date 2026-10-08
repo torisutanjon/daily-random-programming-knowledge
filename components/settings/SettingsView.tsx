@@ -83,6 +83,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
         savedRef.current = next;
         setDraft(next);
         setStatus("saved");
+        if ("apiKey" in patch) setKeyTest({ kind: "idle" });
         router.refresh();
         return true;
       } catch {
@@ -234,7 +235,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
       </Row>
 
       <Section title="AI grading" />
-      <Row title="API key" help="Stored locally. Without a key the app runs in demo mode." stacked>
+      <Row title="API key" help="Stored locally on this computer." stacked>
         <div className="mt-2 text-[13px] text-ink-soft">
           {draft.hasApiKey ? "A key is saved." : "No key — the app runs in demo mode."}
         </div>

@@ -264,4 +264,20 @@ describe("SettingsView", () => {
     ).toBeInTheDocument();
     expect(input).toHaveValue("sk-ant-test-123");
   });
+
+  it("removing the key clears a stale test result", async () => {
+    fetchMock()
+      .mockResolvedValueOnce(
+        fail(502, { error: { code: "invalid_key", message: "x" } }),
+      )
+      .mockResolvedValueOnce(ok({ ...initial, hasApiKey: false }));
+    render(<SettingsView initial={{ ...initial, hasApiKey: true }} />);
+    await userEvent.click(screen.getByRole("button", { name: "Test key" }));
+    await screen.findByText("Key rejected. Check it was copied in full.");
+    await userEvent.click(screen.getByRole("button", { name: "Remove key" }));
+    await screen.findByText("No key — the app runs in demo mode.");
+    expect(
+      screen.queryByText("Key rejected. Check it was copied in full."),
+    ).not.toBeInTheDocument();
+  });
 });
