@@ -65,24 +65,31 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
   async function check(): Promise<void> {
     if (running) return;
     running = true;
+    let nextFireAt: string | null = null;
     try {
       clear();
       const schedule = await getSchedule();
-      if (!schedule) {
-        arm(MAX_MS);
-        return;
-      }
+      if (!schedule) return;
+      nextFireAt = schedule.nextFireAt;
       if (schedule.launchAtLogin !== appliedLaunch) {
         appliedLaunch = schedule.launchAtLogin;
-        deps.applyLaunchAtLogin(schedule.launchAtLogin);
+        try {
+          deps.applyLaunchAtLogin(schedule.launchAtLogin);
+        } catch {
+          // a failing login-item call must not stop the scheduler
+        }
       }
       if (!schedule.hasWord && schedule.dayKey !== lastHandledDayKey) {
         lastHandledDayKey = schedule.dayKey;
         const term = await generate();
-        deps.notify(term === null ? FAILURE_TOAST : `Today's word: ${term}`);
+        try {
+          deps.notify(term === null ? FAILURE_TOAST : `Today's word: ${term}`);
+        } catch {
+          // a failing toast must not stop the scheduler
+        }
       }
-      arm(Date.parse(schedule.nextFireAt) - deps.now());
     } finally {
+      arm(nextFireAt === null ? MAX_MS : Date.parse(nextFireAt) - deps.now());
       running = false;
     }
   }

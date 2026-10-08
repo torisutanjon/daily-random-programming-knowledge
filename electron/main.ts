@@ -160,9 +160,6 @@ app.whenReady().then(async () => {
     return;
   }
 
-  await createWindow(url);
-  createTray();
-
   const notify = (body: string): void => {
     if (!Notification.isSupported()) {
       return;
@@ -171,9 +168,8 @@ app.whenReady().then(async () => {
     n.on("click", () => {
       liveNotifications.delete(n);
       showMainWindow();
-      void mainWindow?.loadURL(url);
+      mainWindow?.loadURL(url).catch(() => {});
     });
-    n.on("close", () => liveNotifications.delete(n));
     liveNotifications.add(n);
     n.show();
   };
@@ -195,6 +191,9 @@ app.whenReady().then(async () => {
   });
   scheduler.start();
   powerMonitor.on("resume", () => void scheduler?.check());
+
+  await createWindow(url);
+  createTray();
 });
 
 app.on("before-quit", () => {

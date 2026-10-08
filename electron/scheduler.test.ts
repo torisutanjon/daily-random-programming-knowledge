@@ -128,6 +128,15 @@ describe("createScheduler", () => {
     expect(t.lastDelay()).toBe(60_000);
   });
 
+  it("notify throwing still resolves and re-arms", async () => {
+    const t = setup();
+    t.notify.mockImplementation(() => {
+      throw new Error("toast failed");
+    });
+    await expect(t.scheduler.check()).resolves.toBeUndefined();
+    expect(t.lastDelay()).toBe(30_000);
+  });
+
   it("schedule failure re-arms at 60 s without toasting", async () => {
     const t = setup({ scheduleFails: true });
     await t.scheduler.check();
