@@ -27,7 +27,7 @@ let tray: Tray | null = null;
 let server: UtilityProcess | null = null;
 let scheduler: Scheduler | null = null;
 let quitting = false;
-let lastNotification: Notification | null = null;
+const liveNotifications = new Set<Notification>();
 const startHidden = process.argv.includes("--hidden");
 
 function getIconPath(): string {
@@ -169,10 +169,12 @@ app.whenReady().then(async () => {
     }
     const n = new Notification({ title: "drpk", body });
     n.on("click", () => {
+      liveNotifications.delete(n);
       showMainWindow();
       void mainWindow?.loadURL(url);
     });
-    lastNotification = n;
+    n.on("close", () => liveNotifications.delete(n));
+    liveNotifications.add(n);
     n.show();
   };
 
