@@ -231,6 +231,7 @@ describe("SettingsView", () => {
     const afterSecond = afterFirst.filter((id) => id !== "nextjs");
     await userEvent.click(screen.getByRole("checkbox", { name: "Security" }));
     await userEvent.click(screen.getByRole("checkbox", { name: "Next.js" }));
+    expect(puts()).toHaveLength(1); // second PUT waits for the first
     resolvers[0](ok({ ...initial, areas: afterFirst }));
     await waitFor(() => expect(puts()).toHaveLength(2));
     resolvers[1](ok({ ...initial, areas: afterSecond }));
@@ -248,5 +249,19 @@ describe("SettingsView", () => {
     expect(
       Array.from(select.options, (o) => o.value),
     ).toContain("claude-opus-4-8");
+  });
+
+  it("a failed key save keeps the typed key", async () => {
+    fetchMock().mockResolvedValue(
+      fail(500, { error: { code: "internal", message: "x" } }),
+    );
+    render(<SettingsView initial={initial} />);
+    const input = screen.getByLabelText("API key");
+    await userEvent.type(input, "sk-ant-test-123");
+    await userEvent.click(screen.getByRole("button", { name: "Save key" }));
+    expect(
+      await screen.findByText("Couldn't save — your change was undone."),
+    ).toBeInTheDocument();
+    expect(input).toHaveValue("sk-ant-test-123");
   });
 });

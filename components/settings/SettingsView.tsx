@@ -69,9 +69,9 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
   const savedRef = useRef(initial);
   const queue = useRef<Promise<void>>(Promise.resolve());
 
-  function save(patch: Patch): void {
+  function save(patch: Patch): Promise<boolean> {
     if (!("apiKey" in patch)) setDraft((d) => ({ ...d, ...patch }));
-    queue.current = queue.current.then(async () => {
+    const run = queue.current.then(async (): Promise<boolean> => {
       try {
         const res = await fetch("/api/settings", {
           method: "PUT",
@@ -84,11 +84,15 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
         setDraft(next);
         setStatus("saved");
         router.refresh();
+        return true;
       } catch {
         setDraft(savedRef.current);
         setStatus("error");
+        return false;
       }
     });
+    queue.current = run.then(() => undefined);
+    return run;
   }
 
   function addTag(): void {
@@ -109,8 +113,9 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
 
   function saveKey(): void {
     const apiKey = keyInput;
-    setKeyInput("");
-    save({ apiKey });
+    void save({ apiKey }).then((saved) => {
+      if (saved) setKeyInput((k) => (k === apiKey ? "" : k));
+    });
   }
 
   async function testKey(): Promise<void> {
@@ -141,7 +146,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
   const lastArea = draft.areas.length === 1 ? draft.areas[0] : null;
 
   return (
-    <div className="mx-auto max-w-[760px] px-10 pt-12 pb-[100px]">
+    <div className="@container mx-auto max-w-[760px] px-10 pt-12 pb-[100px]">
       <h1 className="text-[32px] font-semibold tracking-[-0.01em] text-ink-bright">Settings</h1>
       <p aria-live="polite" className={`mt-2 mb-5 min-h-5 text-[13px] ${status === "error" ? "text-fail" : "text-ink-soft"}`}>
         {status === "saved" && "Saved"}
