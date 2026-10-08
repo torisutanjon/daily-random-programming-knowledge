@@ -259,4 +259,41 @@ describe("QuestionCard", () => {
     );
     expect(calls).toHaveLength(1);
   });
+
+  it("invalid_key grading failure links to Settings and keeps the answer", async () => {
+    const user = userEvent.setup();
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse(502, { error: { code: "invalid_key", message: "x" } }),
+    );
+
+    render(<Harness initial={base} />);
+    await user.type(screen.getByRole("textbox"), "my answer");
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    expect(
+      await screen.findByText(/Couldn't grade — try again. Your answer is still here./),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Check your API key in Settings" }),
+    ).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("textbox")).toHaveValue("my answer");
+  });
+
+  it("reveal failure shows an alert and leaves the question unrevealed", async () => {
+    const user = userEvent.setup();
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse(500, { error: { code: "internal", message: "x" } }),
+    );
+
+    render(<Harness initial={base} />);
+    await user.click(screen.getByRole("button", { name: "Reveal answer" }));
+    const group = screen.getByRole("group", { name: "Confirm reveal" });
+    await user.click(within(group).getByRole("button", { name: "Reveal answer" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn't reveal — try again.",
+    );
+    expect(screen.queryByText("Revealed")).not.toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
+  });
 });

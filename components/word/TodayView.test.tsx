@@ -98,4 +98,19 @@ describe("TodayView", () => {
     await screen.findByRole("heading", { level: 1 });
     expect(screen.queryByText("Demo mode")).not.toBeInTheDocument();
   });
+
+  it("offers Open Settings for provider_rejected", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse(
+        502,
+        errorBody("provider_rejected", "Claude rejected the request — check the model in Settings."),
+      ),
+    );
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
+    expect(
+      await screen.findByText("Claude rejected the request — check the model in Settings."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open Settings" })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
 });
