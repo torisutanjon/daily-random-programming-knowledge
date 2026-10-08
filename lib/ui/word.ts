@@ -27,6 +27,13 @@ export function formatLongDate(dayKey: string): string {
   }).replace(",", "");
 }
 
+export function formatShortDate(dayKey: string): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  return new Date(y, m - 1, d, 12)
+    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+    .replace(",", "");
+}
+
 export function areaLabel(id: string): string {
   return AREAS.find((area) => area.id === id)?.label ?? id;
 }

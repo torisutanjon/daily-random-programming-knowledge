@@ -1,4 +1,4 @@
-import { areaLabel, attemptTime, formatLongDate, progressSummary, questionStatuses } from "./word";
+import { areaLabel, attemptTime, formatLongDate, formatShortDate, progressSummary, questionStatuses } from "./word";
 
 const q = (status: string) => ({ status }) as never;
 const word = (...statuses: string[][]) =>
@@ -28,6 +28,12 @@ describe("questionStatuses", () => {
 describe("formatLongDate", () => {
   it("formats a dayKey", () => {
     expect(formatLongDate("2026-10-08")).toBe("Thu 8 Oct 2026");
+  });
+});
+
+describe("formatShortDate", () => {
+  it("formats a dayKey without year", () => {
+    expect(formatShortDate("2026-10-05")).toBe("Mon 5 Oct");
   });
 });
 
