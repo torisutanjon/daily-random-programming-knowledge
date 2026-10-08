@@ -15,6 +15,10 @@ describe("release-please", () => {
     expect(wf).toContain("pull-requests: write");
   });
 
+  it("release PRs target main, not the default branch", () => {
+    expect(read(".github", "workflows", "release-please.yml")).toMatch(/with:\s*\n\s*target-branch:\s*main/);
+  });
+
   it("config uses the node release type", () => {
     const cfg = JSON.parse(read("release-please-config.json"));
     expect(cfg.packages["."]["release-type"]).toBe("node");

@@ -17,3 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
+        # The repo's default branch is develop; releases are cut from main.
+        with:
+          target-branch: main
