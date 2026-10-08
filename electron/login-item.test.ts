@@ -1,7 +1,12 @@
 /** @jest-environment node */
 import fs from "fs";
 import path from "path";
-import { LOGIN_ITEM_NAME, loginItemSettings } from "./login-item";
+import {
+  LEGACY_LOGIN_ITEM_NAME,
+  LOGIN_ITEM_NAME,
+  legacyLoginItemRemoval,
+  loginItemSettings,
+} from "./login-item";
 
 describe("login item", () => {
   it("names the login item drpk", () => {
@@ -43,5 +48,47 @@ describe("login item", () => {
     expect(nsh).toContain(
       `DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Run" "com.drpk.app"`,
     );
+  });
+
+  it("the uninstaller deletes only when not updating", () => {
+    const nsh = fs.readFileSync(
+      path.join(__dirname, "assets", "installer.nsh"),
+      "utf8",
+    );
+    const start = nsh.indexOf("${ifNot} ${isUpdated}");
+    const end = nsh.indexOf("${endIf}");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const lines = nsh.match(/^.*DeleteRegValue.*$/gm) ?? [];
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      const at = nsh.indexOf(line);
+      expect(at).toBeGreaterThan(start);
+      expect(at).toBeLessThan(end);
+    }
+  });
+
+  it("the uninstaller removes the StartupApproved entries", () => {
+    const nsh = fs.readFileSync(
+      path.join(__dirname, "assets", "installer.nsh"),
+      "utf8",
+    );
+    for (const name of [LOGIN_ITEM_NAME, LEGACY_LOGIN_ITEM_NAME]) {
+      expect(nsh).toContain(
+        `DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run" "${name}"`,
+      );
+    }
+  });
+
+  it("removes the legacy login item at runtime", () => {
+    expect(legacyLoginItemRemoval()).toEqual({
+      openAtLogin: false,
+      name: "com.drpk.app",
+    });
+  });
+
+  it("the legacy name is the AppUserModelId used in main.ts", () => {
+    const main = fs.readFileSync(path.join(__dirname, "main.ts"), "utf8");
+    expect(main).toContain(`const APP_ID = "${LEGACY_LOGIN_ITEM_NAME}"`);
   });
 });
