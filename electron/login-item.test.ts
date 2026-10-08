@@ -34,4 +34,14 @@ describe("login item", () => {
       `DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Run" "${LOGIN_ITEM_NAME}"`,
     );
   });
+
+  it("the uninstaller also removes the legacy AppUserModelId value", () => {
+    const nsh = fs.readFileSync(
+      path.join(__dirname, "assets", "installer.nsh"),
+      "utf8",
+    );
+    expect(nsh).toContain(
+      `DeleteRegValue HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Run" "com.drpk.app"`,
+    );
+  });
 });
