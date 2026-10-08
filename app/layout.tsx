@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import Shell from "@/components/shell/Shell";
+import { defaultSettings } from "@/lib/domain/settings";
+import { createRepo, getDataDir } from "@/lib/store/repo";
+import { buildShell, type ShellData } from "@/lib/ui/shell";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -19,13 +23,30 @@ export const metadata: Metadata = {
   description: "A daily programming word to research, with questions to prove you learned it.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const dynamic = "force-dynamic";
+
+async function loadShell(): Promise<ShellData> {
+  try {
+    const repo = createRepo(getDataDir());
+    const [words, settings] = await Promise.all([repo.listWords(), repo.getSettings()]);
+    return buildShell(words, settings, new Date());
+  } catch (error) {
+    console.error(error);
+    return buildShell([], defaultSettings(), new Date());
+  }
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const data = await loadShell();
+
   return (
     <html
       lang="en"
       className={`${plexSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="h-full">
+        <Shell data={data}>{children}</Shell>
+      </body>
     </html>
   );
 }
