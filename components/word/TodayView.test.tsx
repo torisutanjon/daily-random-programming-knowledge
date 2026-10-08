@@ -40,9 +40,9 @@ beforeEach(() => {
 describe("TodayView", () => {
   it("shows the generating state while pending", () => {
     (global.fetch as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
-    render(<TodayView dayKey="2026-10-08" demo={false} />);
+    render(<TodayView dayKey="2026-10-07" demo={false} />);
     expect(screen.getByText("Creating today's word")).toBeInTheDocument();
-    expect(screen.getByText("Thu 8 Oct 2026")).toBeInTheDocument();
+    expect(screen.getByText("Wed 7 Oct 2026")).toBeInTheDocument();
   });
 
   it("shows the word on success", async () => {
