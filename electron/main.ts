@@ -27,6 +27,7 @@ let tray: Tray | null = null;
 let server: UtilityProcess | null = null;
 let scheduler: Scheduler | null = null;
 let quitting = false;
+let lastNotification: Notification | null = null;
 const startHidden = process.argv.includes("--hidden");
 
 function getIconPath(): string {
@@ -75,6 +76,13 @@ async function createWindow(url: string): Promise<void> {
       e.preventDefault();
       mainWindow?.hide();
     }
+  });
+
+  mainWindow.on("query-session-end", () => {
+    quitting = true;
+  });
+  mainWindow.on("session-end", () => {
+    quitting = true;
   });
 
   await mainWindow.loadURL(url);
@@ -164,6 +172,7 @@ app.whenReady().then(async () => {
       showMainWindow();
       void mainWindow?.loadURL(url);
     });
+    lastNotification = n;
     n.show();
   };
 
