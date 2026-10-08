@@ -10,6 +10,7 @@ import {
   Tray,
   utilityProcess,
 } from "electron";
+import { legacyLoginItemRemoval, loginItemSettings } from "./login-item";
 import { createScheduler, type Scheduler } from "./scheduler";
 import { getFreePort, standaloneServerPath, waitForServer } from "./server";
 
@@ -185,7 +186,8 @@ app.whenReady().then(async () => {
 
   const applyLaunchAtLogin = (on: boolean): void => {
     if (app.isPackaged) {
-      app.setLoginItemSettings({ openAtLogin: on, args: ["--hidden"] });
+      app.setLoginItemSettings(legacyLoginItemRemoval());
+      app.setLoginItemSettings(loginItemSettings(on));
     }
   };
 
