@@ -28,7 +28,7 @@ function Row({ row }: { row: BacklogRow }): React.JSX.Element {
       <span className="font-mono text-xs text-ink-faint">{row.date}</span>
       <span className="flex min-w-0 flex-col gap-[3px]">
         <span className="truncate text-base text-ink-strong">{row.term}</span>
-        <span className="text-[13px] text-ink-soft">
+        <span className="truncate text-[13px] text-ink-soft">
           {row.area} · {row.level}
         </span>
       </span>
@@ -105,12 +105,12 @@ export default function BacklogView({ data }: { data: BacklogData }): React.JSX.
   const rows = data.rows.filter((r) => matches(r, filter));
 
   return (
-    <div className="mx-auto max-w-[960px] px-10 pb-[100px] pt-12">
+    <div className="@container mx-auto max-w-[960px] px-10 pb-[100px] pt-12">
       <h1 className="text-[32px] font-semibold tracking-[-0.01em] text-ink-bright">Backlog</h1>
       <p className="mt-1.5 text-[14.5px] text-ink-soft">
         Every past word. Unfinished ones wait here — nothing is lost.
       </p>
-      <div className="mt-8 grid grid-cols-[minmax(0,1fr)_280px] items-start gap-10">
+      <div className="mt-8 grid grid-cols-1 items-start gap-10 @4xl:grid-cols-[minmax(0,1fr)_280px]">
         <div>
           <div className="flex w-max gap-1 rounded-[7px] border border-line bg-panel p-[3px]">
             {FILTERS.map((f) => (
