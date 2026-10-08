@@ -17,6 +17,14 @@
   --color-partial: oklch(0.8 0.11 80);
   --color-fail: oklch(0.74 0.11 25);
   --color-revealed: oklch(0.76 0.09 245);
+  --color-card: #232327;
+  --color-ink-bright: #f0f0f2;
+  --color-ink-body: #c9c9ce;
+  --color-ink-dim: #55555d;
+  --color-line-soft: #2e2e33;
+  --color-field-line: #34343a;
+  --color-control-line: #3a3a40;
+  --color-on-accent: #141416;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
