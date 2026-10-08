@@ -6,6 +6,6 @@ import { createRepo, getDataDir } from "@/lib/store/repo";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  // 1. const settings = await createRepo(getDataDir()).getSettings();
-  // 2. return <SettingsView initial={toPublicSettings(settings)} />;
+  const settings = await createRepo(getDataDir()).getSettings();
+  return <SettingsView initial={toPublicSettings(settings)} />;
 }
