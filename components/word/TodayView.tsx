@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { PublicWord } from "@/lib/domain/sanitize";
 import { formatLongDate } from "@/lib/ui/word";
 import WordView from "@/components/word/WordView";
@@ -124,21 +125,27 @@ function ErrorCard({
 }
 
 export default function TodayView({ demo }: { demo: boolean }): React.JSX.Element {
+  const router = useRouter();
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {
     let live = true;
     void fetchToday().then((next) => {
-      if (live) setState(next);
+      if (!live) return;
+      setState(next);
+      if (next.kind === "ready") router.refresh();
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [router]);
 
   function retry(): void {
     setState({ kind: "loading" });
-    void fetchToday().then(setState);
+    void fetchToday().then((next) => {
+      setState(next);
+      if (next.kind === "ready") router.refresh();
+    });
   }
 
   if (state.kind === "loading") return <Loading />;

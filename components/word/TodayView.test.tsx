@@ -3,7 +3,9 @@ import userEvent from "@testing-library/user-event";
 import type { PublicWord } from "@/lib/domain/sanitize";
 import TodayView from "@/components/word/TodayView";
 
-jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
+const refresh = jest.fn();
+const router = { refresh }; // stable identity, like the real Next router
+jest.mock("next/navigation", () => ({ useRouter: () => router }));
 
 const word: PublicWord = {
   dayKey: "2026-10-08",
@@ -31,6 +33,7 @@ function errorBody(code: string, message: string) {
 }
 
 beforeEach(() => {
+  refresh.mockClear();
   global.fetch = jest.fn() as jest.Mock;
 });
 
@@ -46,6 +49,7 @@ describe("TodayView", () => {
     render(<TodayView demo={false} />);
     expect(await screen.findByRole("heading", { level: 1, name: "Circuit breaker" })).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledWith("/api/today");
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("shows the error card and Retry refetches", async () => {
@@ -60,6 +64,7 @@ describe("TodayView", () => {
     expect(await screen.findByText("Couldn't create today's word")).toBeInTheDocument();
     expect(screen.getByText("Claude is unavailable right now — try again.")).toBeInTheDocument();
     expect(screen.getByText("provider_unavailable")).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
     expect(screen.queryByRole("link", { name: "Open Settings" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Retry" }));

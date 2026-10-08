@@ -13,5 +13,5 @@ export default async function WordPage({ params }: PageProps<"/word/[dayKey]">) 
   if (!DAY_KEY.test(dayKey)) notFound();
   const word = await createRepo(getDataDir()).getWord(dayKey);
   if (!word) notFound();
-  return <WordView word={sanitizeWord(word)} from="backlog" />;
+  return <WordView key={dayKey} word={sanitizeWord(word)} from="backlog" />;
 }
