@@ -178,19 +178,17 @@ export default function WordView({
                     {isOpen ? "▾" : "▸"}
                   </span>
                 </button>
-                {isOpen && (
-                  <div className="ml-[13px] flex flex-col gap-[34px] border-l border-line-soft pb-5 pl-[26px] pt-1">
-                    {topic.questions.map((question, i) => (
-                      <QuestionCard
-                        key={question.id}
-                        dayKey={word.dayKey}
-                        question={question}
-                        index={i}
-                        onChange={(q) => replaceQuestion(topic.id, q)}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div hidden={!isOpen} className="ml-[13px] flex flex-col gap-[34px] border-l border-line-soft pb-5 pl-[26px] pt-1">
+                  {topic.questions.map((question, i) => (
+                    <QuestionCard
+                      key={question.id}
+                      dayKey={word.dayKey}
+                      question={question}
+                      index={i}
+                      onChange={(q) => replaceQuestion(topic.id, q)}
+                    />
+                  ))}
+                </div>
               </div>
             );
           })}

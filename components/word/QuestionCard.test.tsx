@@ -242,4 +242,21 @@ describe("QuestionCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("textbox")).toHaveValue("my answer");
   });
+
+  it("reveal is sent once on double click", async () => {
+    const user = userEvent.setup();
+    (global.fetch as jest.Mock).mockReturnValue(new Promise(() => {}));
+
+    render(<Harness initial={base} />);
+    await user.click(screen.getByRole("button", { name: "Reveal answer" }));
+    const confirm = within(
+      screen.getByRole("group", { name: "Confirm reveal" }),
+    ).getByRole("button", { name: "Reveal answer" });
+    await user.dblClick(confirm);
+
+    const calls = (global.fetch as jest.Mock).mock.calls.filter(
+      ([url]) => url === "/api/reveal",
+    );
+    expect(calls).toHaveLength(1);
+  });
 });

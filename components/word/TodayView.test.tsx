@@ -40,13 +40,14 @@ beforeEach(() => {
 describe("TodayView", () => {
   it("shows the generating state while pending", () => {
     (global.fetch as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
     expect(screen.getByText("Creating today's word")).toBeInTheDocument();
+    expect(screen.getByText("Thu 8 Oct 2026")).toBeInTheDocument();
   });
 
   it("shows the word on success", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(200, word));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
     expect(await screen.findByRole("heading", { level: 1, name: "Circuit breaker" })).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledWith("/api/today");
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -59,7 +60,7 @@ describe("TodayView", () => {
         jsonResponse(502, errorBody("provider_unavailable", "Claude is unavailable right now — try again.")),
       )
       .mockResolvedValueOnce(jsonResponse(200, word));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
 
     expect(await screen.findByText("Couldn't create today's word")).toBeInTheDocument();
     expect(screen.getByText("Claude is unavailable right now — try again.")).toBeInTheDocument();
@@ -74,26 +75,26 @@ describe("TodayView", () => {
 
   it("offers Open Settings for invalid_key", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(502, errorBody("invalid_key", "Bad key.")));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
     expect(await screen.findByRole("link", { name: "Open Settings" })).toHaveAttribute("href", "/settings");
   });
 
   it("reports a network failure", async () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce(new TypeError("offline"));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
     expect(await screen.findByText("Couldn't reach drpk — try again.")).toBeInTheDocument();
     expect(screen.getByText("network")).toBeInTheDocument();
   });
 
   it("shows the demo note only in demo mode", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(200, word));
-    const { unmount } = render(<TodayView demo />);
+    const { unmount } = render(<TodayView dayKey="2026-10-08" demo />);
     expect(await screen.findByText("Demo mode")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add an API key" })).toHaveAttribute("href", "/settings");
     unmount();
 
     (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(200, word));
-    render(<TodayView demo={false} />);
+    render(<TodayView dayKey="2026-10-08" demo={false} />);
     await screen.findByRole("heading", { level: 1 });
     expect(screen.queryByText("Demo mode")).not.toBeInTheDocument();
   });

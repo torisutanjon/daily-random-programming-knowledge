@@ -47,6 +47,7 @@ export default function QuestionCard({
   const [code, setCode] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [reopened, setReopened] = useState(false);
+  const [revealing, setRevealing] = useState(false);
 
   const { status } = question;
   const composer = status === "unanswered" || status === "partial" || reopened;
@@ -60,7 +61,7 @@ export default function QuestionCard({
       const res = await fetch("/api/answer", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ dayKey, questionId: question.id, answer: draft }),
+        body: JSON.stringify({ dayKey, questionId: question.id, answer: draft.trim() }),
       });
       if (res.ok) {
         onChange((await res.json()) as PublicQuestion);
@@ -79,6 +80,8 @@ export default function QuestionCard({
   }
 
   async function reveal(): Promise<void> {
+    if (revealing) return;
+    setRevealing(true);
     setError(null);
     setCode(null);
     try {
@@ -96,6 +99,8 @@ export default function QuestionCard({
       }
     } catch {
       setError("Couldn't reveal — try again.");
+    } finally {
+      setRevealing(false);
     }
   }
 
@@ -130,8 +135,8 @@ export default function QuestionCard({
           <div className="text-[15.5px] leading-relaxed text-ink">{question.modelAnswer}</div>
           <span className="mt-1 text-xs text-ink-soft">Key points</span>
           <ul className="flex flex-col gap-1">
-            {(question.rubric ?? []).map((point) => (
-              <li key={point} className="flex gap-2.5 text-[14.5px] text-ink-body">
+            {(question.rubric ?? []).map((point, i) => (
+              <li key={i} className="flex gap-2.5 text-[14.5px] text-ink-body">
                 <span aria-hidden className="text-revealed">•</span>
                 <span>{point}</span>
               </li>
@@ -162,7 +167,9 @@ export default function QuestionCard({
               </button>
             )}
             <span className="flex-1" />
-            {grading && <span className="text-[13px] text-ink-soft">Reading your answer…</span>}
+            <span aria-live="polite" className="text-[13px] text-ink-soft">
+              {grading && "Reading your answer…"}
+            </span>
             <button
               type="button"
               onClick={submit}
@@ -176,7 +183,7 @@ export default function QuestionCard({
       )}
 
       {error && (
-        <div className="text-[13.5px] text-fail">
+        <div role="alert" className="text-[13.5px] text-fail">
           {error}
           {code === "invalid_key" && (
             <>
@@ -202,7 +209,11 @@ export default function QuestionCard({
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setConfirming(false)}
+              onClick={() => {
+                setConfirming(false);
+                setError(null);
+                setCode(null);
+              }}
               className="rounded-md border border-control-line px-3.5 py-1.5 text-[13px] font-medium text-ink-body"
             >
               Keep trying
@@ -210,6 +221,7 @@ export default function QuestionCard({
             <button
               type="button"
               onClick={reveal}
+              disabled={revealing}
               className="rounded-md bg-revealed/18 px-3.5 py-1.5 text-[13px] font-medium text-revealed"
             >
               Reveal answer

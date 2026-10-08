@@ -14,12 +14,6 @@ type State =
 
 const NETWORK_MESSAGE = "Couldn't reach drpk — try again.";
 
-function localDayKey(): string {
-  const d = new Date();
-  const pad = (n: number): string => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 async function fetchToday(): Promise<State> {
   try {
     const res = await fetch("/api/today");
@@ -54,18 +48,18 @@ function DemoNote(): React.JSX.Element {
   );
 }
 
-function DateLine(): React.JSX.Element {
-  return <div className="mb-3.5 font-mono text-xs text-ink-faint">{formatLongDate(localDayKey())}</div>;
+function DateLine({ dayKey }: { dayKey: string }): React.JSX.Element {
+  return <div className="mb-3.5 font-mono text-xs text-ink-faint">{formatLongDate(dayKey)}</div>;
 }
 
 function Frame({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <div className="mx-auto max-w-[720px] px-10 pb-[120px] pt-9">{children}</div>;
 }
 
-function Loading(): React.JSX.Element {
+function Loading({ dayKey }: { dayKey: string }): React.JSX.Element {
   return (
     <Frame>
-      <DateLine />
+      <DateLine dayKey={dayKey} />
       <div className="h-[46px] w-[300px] max-w-full animate-pulse rounded-md bg-active" />
       <div className="mt-[18px] flex gap-2">
         <div className="h-6 w-[150px] animate-pulse rounded-full bg-hover" />
@@ -86,10 +80,12 @@ function Loading(): React.JSX.Element {
 }
 
 function ErrorCard({
+  dayKey,
   code,
   message,
   onRetry,
 }: {
+  dayKey: string;
   code: string;
   message: string;
   onRetry: () => void;
@@ -97,7 +93,7 @@ function ErrorCard({
   const keyError = code === "invalid_key" || code === "provider_rejected";
   return (
     <Frame>
-      <DateLine />
+      <DateLine dayKey={dayKey} />
       <div className="flex flex-col gap-2.5 rounded-lg border border-field-line bg-card p-6">
         <div className="text-[17px] font-semibold text-ink-strong">Couldn&apos;t create today&apos;s word</div>
         <div className="text-[14.5px] leading-relaxed text-ink-muted">{message}</div>
@@ -124,7 +120,7 @@ function ErrorCard({
   );
 }
 
-export default function TodayView({ demo }: { demo: boolean }): React.JSX.Element {
+export default function TodayView({ dayKey, demo }: { dayKey: string; demo: boolean }): React.JSX.Element {
   const router = useRouter();
   const [state, setState] = useState<State>({ kind: "loading" });
 
@@ -148,7 +144,7 @@ export default function TodayView({ demo }: { demo: boolean }): React.JSX.Elemen
     });
   }
 
-  if (state.kind === "loading") return <Loading />;
-  if (state.kind === "error") return <ErrorCard code={state.code} message={state.message} onRetry={retry} />;
+  if (state.kind === "loading") return <Loading dayKey={dayKey} />;
+  if (state.kind === "error") return <ErrorCard dayKey={dayKey} code={state.code} message={state.message} onRetry={retry} />;
   return <WordView word={state.word} from="today" notice={demo ? <DemoNote /> : undefined} />;
 }

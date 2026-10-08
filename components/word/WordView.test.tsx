@@ -66,11 +66,20 @@ describe("WordView", () => {
     expect(topicButton("Three states")).toHaveAttribute("aria-expanded", "false");
     expect(topicButton("Breakers vs retries")).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("P2")).toBeInTheDocument();
-    expect(screen.queryByText("P1")).not.toBeInTheDocument();
+    expect(screen.getByText("P1")).not.toBeVisible();
 
     await user.click(topicButton("Three states"));
     expect(topicButton("Three states")).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("P1")).toBeInTheDocument();
+  });
+
+  it("keeps a typed draft across collapse and expand", async () => {
+    const user = userEvent.setup();
+    render(<WordView word={word} from="today" />);
+    await user.type(screen.getByRole("textbox"), "half written");
+    await user.click(topicButton("Breakers vs retries"));
+    await user.click(topicButton("Breakers vs retries"));
+    expect(screen.getByRole("textbox")).toHaveValue("half written");
   });
 
   it("topic icons reflect topic status", () => {
