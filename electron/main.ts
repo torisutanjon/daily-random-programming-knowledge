@@ -28,6 +28,7 @@ let server: UtilityProcess | null = null;
 let scheduler: Scheduler | null = null;
 let quitting = false;
 const liveNotifications = new Set<Notification>();
+const MAX_LIVE_NOTIFICATIONS = 10;
 const startHidden = process.argv.includes("--hidden");
 
 function getIconPath(): string {
@@ -170,7 +171,15 @@ app.whenReady().then(async () => {
       showMainWindow();
       mainWindow?.loadURL(url).catch(() => {});
     });
+    n.on("close", (details) => {
+      if (details.reason !== "timedOut") liveNotifications.delete(n);
+    });
     liveNotifications.add(n);
+    while (liveNotifications.size > MAX_LIVE_NOTIFICATIONS) {
+      const oldest = liveNotifications.values().next().value;
+      if (oldest === undefined) break;
+      liveNotifications.delete(oldest);
+    }
     n.show();
   };
 
