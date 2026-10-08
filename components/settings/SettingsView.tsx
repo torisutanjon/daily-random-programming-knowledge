@@ -171,7 +171,9 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
           onChange={(e) => setDraft((d) => ({ ...d, notifyTime: e.target.value }))}
           onBlur={(e) => {
             const value = e.target.value;
-            if (TIME.test(value) && value !== savedRef.current.notifyTime) {
+            if (!TIME.test(value)) {
+              setDraft((d) => ({ ...d, notifyTime: savedRef.current.notifyTime }));
+            } else if (value !== savedRef.current.notifyTime) {
               void save({ notifyTime: value });
             }
           }}

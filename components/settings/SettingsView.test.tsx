@@ -344,4 +344,14 @@ describe("SettingsView", () => {
       screen.queryByText("Key rejected. Check it was copied in full."),
     ).not.toBeInTheDocument();
   });
+
+  it("an invalid notify time reverts on blur", async () => {
+    render(<SettingsView initial={initial} />);
+    const input = screen.getByLabelText("Notify time");
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.blur(input);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(input).toHaveValue("09:00");
+    expect(puts()).toHaveLength(0);
+  });
 });
