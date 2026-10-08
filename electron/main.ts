@@ -46,6 +46,8 @@ async function createWindow(url: string): Promise<void> {
     title: "drpk",
     icon,
     backgroundColor: "#1f1f22",
+    titleBarStyle: "hidden",
+    titleBarOverlay: { color: "#151517", symbolColor: "#a3a3ab", height: 38 },
     show: false,
   });
 
