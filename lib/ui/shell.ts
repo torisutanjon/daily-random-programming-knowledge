@@ -2,6 +2,7 @@ import { currentDayKey, formatDayKey, nextFireAt } from "@/lib/domain/day";
 import type { Settings } from "@/lib/domain/settings";
 import { wordProgress } from "@/lib/domain/status";
 import type { Verdict, Word } from "@/lib/domain/types";
+import { formatShortDate } from "@/lib/ui/word";
 
 export type LogVerdict = "pass" | "partial" | "fail" | "revealed";
 
@@ -39,15 +40,6 @@ function hhmm(date: Date): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-function shortDate(dayKey: string): string {
-  const [y, m, d] = dayKey.split("-").map(Number);
-  return new Date(y, m - 1, d, 12).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
-
 function progressText(word: Word): string {
   const { learned, revealed, total } = wordProgress(word);
   return `${learned + revealed}/${total}`;
@@ -66,7 +58,7 @@ export function buildShell(words: readonly Word[], settings: Settings, now: Date
     .map((word) => ({
       dayKey: word.dayKey,
       term: word.term,
-      when: word.dayKey === todayKey ? "Today" : shortDate(word.dayKey),
+      when: word.dayKey === todayKey ? "Today" : formatShortDate(word.dayKey),
       progress: progressText(word),
     }));
 
