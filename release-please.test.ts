@@ -24,6 +24,11 @@ describe("release-please", () => {
     expect(cfg.packages["."]["release-type"]).toBe("node");
   });
 
+  it("tags without the component (vX.Y.Z, not drpk-vX.Y.Z)", () => {
+    const cfg = JSON.parse(read("release-please-config.json"));
+    expect(cfg.packages["."]["include-component-in-tag"]).toBe(false);
+  });
+
   it("manifest matches package.json version", () => {
     const manifest = JSON.parse(read(".release-please-manifest.json"));
     const pkg = JSON.parse(read("package.json"));
