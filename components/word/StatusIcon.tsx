@@ -8,6 +8,13 @@ export const SEGMENT_CLASS: Record<QuestionStatus, string> = {
   unanswered: "bg-active",
 };
 
+const LABEL: Record<TopicStatus, string> = {
+  learned: "Learned",
+  revealed: "Revealed",
+  "in-progress": "In progress",
+  unanswered: "Not started",
+};
+
 export function StatusIcon({ status }: { status: TopicStatus }): React.JSX.Element {
   const box = "flex h-4 w-4 flex-none items-center justify-center rounded-[4px] box-border";
   if (status === "learned") {
@@ -23,6 +30,7 @@ export function StatusIcon({ status }: { status: TopicStatus }): React.JSX.Eleme
             strokeLinejoin="round"
           />
         </svg>
+        <span className="sr-only">{LABEL[status]}</span>
       </span>
     );
   }
@@ -30,6 +38,7 @@ export function StatusIcon({ status }: { status: TopicStatus }): React.JSX.Eleme
     return (
       <span data-status={status} className={`${box} border-[1.5px] border-partial`}>
         <span className="h-1.5 w-1.5 rounded-[1.5px] bg-partial" />
+        <span className="sr-only">{LABEL[status]}</span>
       </span>
     );
   }
@@ -37,8 +46,13 @@ export function StatusIcon({ status }: { status: TopicStatus }): React.JSX.Eleme
     return (
       <span data-status={status} className={`${box} border-[1.5px] border-revealed`}>
         <span className="h-1.5 w-1.5 rounded-full bg-revealed" />
+        <span className="sr-only">{LABEL[status]}</span>
       </span>
     );
   }
-  return <span data-status={status} className={`${box} border-[1.5px] border-ink-dim`} />;
+  return (
+    <span data-status={status} className={`${box} border-[1.5px] border-ink-dim`}>
+      <span className="sr-only">{LABEL[status]}</span>
+    </span>
+  );
 }

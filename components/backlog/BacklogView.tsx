@@ -112,7 +112,7 @@ export default function BacklogView({ data }: { data: BacklogData }): React.JSX.
       </p>
       <div className="mt-8 grid grid-cols-1 items-start gap-10 @3xl:grid-cols-[minmax(0,1fr)_280px]">
         <div>
-          <div className="flex w-max gap-1 rounded-[7px] border border-line bg-panel p-[3px]">
+          <div role="group" aria-label="Filter" className="flex w-max gap-1 rounded-[7px] border border-line bg-panel p-[3px]">
             {FILTERS.map((f) => (
               <button
                 key={f.id}

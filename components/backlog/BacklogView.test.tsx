@@ -144,4 +144,15 @@ describe("BacklogView", () => {
     await user.click(screen.getByRole("button", { name: "All" }));
     expect(screen.getByText("React reconciliation")).toBeInTheDocument();
   });
+
+  it("labels the row status for screen readers", () => {
+    render(<BacklogView data={makeData()} />);
+    expect(screen.getByRole("link", { name: /Backpressure/ })).toHaveAccessibleName(/In progress/);
+  });
+
+  it("groups the filter buttons under a label", () => {
+    render(<BacklogView data={makeData()} />);
+    const group = screen.getByRole("group", { name: "Filter" });
+    expect(within(group).getAllByRole("button")).toHaveLength(3);
+  });
 });
