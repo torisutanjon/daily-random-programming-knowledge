@@ -19,6 +19,10 @@ const eslintConfig = defineConfig([
           selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,8}\\b/]",
           message: "Use a Tailwind theme token, not a hex colour.",
         },
+        {
+          selector: "JSXAttribute[name.name='style']",
+          message: "Inline style attributes are blocked by the CSP (DRPK-021). Use Tailwind classes or SVG attributes.",
+        },
       ],
     },
   },

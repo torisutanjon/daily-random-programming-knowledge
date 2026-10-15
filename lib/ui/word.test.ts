@@ -42,4 +42,9 @@ describe("areaLabel", () => {
     expect(areaLabel("system-design")).toBe("System design");
     expect(areaLabel("nope")).toBe("nope");
   });
+
+  it("labels a custom area with its name and keeps built-in labels", () => {
+    expect(areaLabel("My area")).toBe("My area");
+    expect(areaLabel("nextjs")).toBe("Next.js");
+  });
 });

@@ -25,6 +25,10 @@ describe("pickArea", () => {
     expect(pickArea([], [B, A], () => 0)).toBe(B);
   });
 
+  it("picks a custom area", () => {
+    expect(pickArea([], ["My area"], () => 0)).toBe("My area");
+  });
+
   it("weights each area by 1 / (1 + count)", () => {
     // A seen 3 times → weight 0.25; B → 1; total 1.25.
     const history = [A, A, A];

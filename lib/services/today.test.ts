@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { pickArea } from "../domain/coverage";
 import { defaultSettings } from "../domain/settings";
+import { createFakeProvider } from "../llm/fake";
 import { FAKE_WORDS } from "../llm/fake-words";
 import type { GeneratedWord, LlmProvider } from "../llm/types";
 import { createRepo } from "../store/repo";
@@ -207,5 +208,20 @@ describe("getToday — generations are serialized", () => {
     expect(a.dayKey).toBe("2026-10-03");
     expect(b.term).toBe("Fresh");
     expect(b.dayKey).toBe("2026-10-04");
+  });
+});
+
+describe("getToday — custom areas", () => {
+  it("generates a demo word in a custom area", async () => {
+    await createRepo(dir).saveSettings({ ...defaultSettings(), areas: ["My area"], customAreas: ["My area"] });
+    const service = createTodayService({
+      repo: createRepo(dir),
+      getProvider: () => ({ llm: createFakeProvider(), name: "fake" }),
+      now: () => new Date(2026, 9, 4, 10, 0),
+      rng: () => 0,
+    });
+    const word = await service.getToday();
+    expect(word.area).toBe("My area");
+    expect(await createRepo(dir).getWord("2026-10-04")).toEqual(word);
   });
 });

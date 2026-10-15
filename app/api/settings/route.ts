@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AREA_IDS, type AreaId } from "@/lib/domain/areas";
+import { AREA_IDS, customAreaError } from "@/lib/domain/areas";
 import { type Settings, toPublicSettings } from "@/lib/domain/settings";
 import { CorruptFileError, createRepo, getDataDir } from "@/lib/store/repo";
 
@@ -7,7 +7,8 @@ const patchSchema = z.strictObject({
   notifyTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
   level: z.enum(["mid", "mid-senior", "senior"]).optional(),
   // Never empty: pickArea throws on no enabled areas, which would break /api/today.
-  areas: z.array(z.enum(AREA_IDS as [AreaId, ...AreaId[]])).min(1).transform((areas) => [...new Set(areas)]).optional(),
+  areas: z.array(z.string()).min(1).transform((areas) => [...new Set(areas)]).optional(),
+  customAreas: z.array(z.string().trim()).optional(),
   stackProfile: z.array(z.string().trim().min(1)).optional(),
   apiKey: z.string().trim().min(1).nullable().optional(), // null clears → demo mode
   model: z.string().trim().min(1).optional(),
@@ -57,12 +58,19 @@ export async function PUT(request: Request): Promise<Response> {
 
   try {
     const repo = createRepo(getDataDir());
-    const next: Settings = await withSaveLock(async () => {
+    const result: Settings | { error: string } = await withSaveLock(async () => {
       const merged = { ...(await repo.getSettings()), ...parsed.data };
+      for (const [i, name] of merged.customAreas.entries()) {
+        const message = customAreaError(name, merged.customAreas.slice(0, i));
+        if (message) return { error: message };
+      }
+      const unknown = merged.areas.find((area) => !(AREA_IDS as readonly string[]).includes(area) && !merged.customAreas.includes(area));
+      if (unknown !== undefined) return { error: `Unknown area: ${unknown}` };
       await repo.saveSettings(merged);
       return merged;
     });
-    return Response.json(toPublicSettings(next));
+    if ("error" in result) return errorResponse(400, "invalid_request", result.error);
+    return Response.json(toPublicSettings(result));
   } catch (error) {
     return serverError(error);
   }

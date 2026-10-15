@@ -1,5 +1,3 @@
-import type { AreaId } from "./areas";
-
 export type Level = "mid" | "mid-senior" | "senior";
 export type QuestionStatus = "unanswered" | "partial" | "learned" | "revealed";
 export type Verdict = "pass" | "partial" | "fail";
@@ -31,7 +29,7 @@ export interface Word {
   dayKey: string; // "YYYY-MM-DD"
   term: string;
   subtitle: string;
-  area: AreaId;
+  area: string;
   level: Level;
   topics: Topic[]; // 4–8
   createdAt: string; // ISO

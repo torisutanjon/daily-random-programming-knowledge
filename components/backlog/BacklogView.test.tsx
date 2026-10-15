@@ -118,10 +118,18 @@ describe("BacklogView", () => {
 
     const node = container.querySelector('[data-area="node-runtime"]');
     expect(node).toHaveTextContent("2");
-    expect(node?.querySelector("[data-bar]")).toHaveStyle({ width: "100%" });
+    expect(node?.querySelector("[data-bar]")).toHaveAttribute("width", "100%");
     expect(
       container.querySelector('[data-area="react-internals"] [data-bar]'),
-    ).toHaveStyle({ width: "50%" });
+    ).toHaveAttribute("width", "50%");
+  });
+
+  it("coverage header counts custom areas", () => {
+    const base = makeData();
+    const custom = { area: "My area", label: "My area", count: 0, enabled: true, percent: 0 };
+    render(<BacklogView data={{ ...base, coverage: [...base.coverage, custom] }} />);
+    const region = screen.getByRole("region", { name: "Coverage" });
+    expect(within(region).getByText(/2 of 17 areas/)).toBeInTheDocument();
   });
 
   it("first day empty state", () => {

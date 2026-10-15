@@ -15,6 +15,7 @@ const initial: PublicSettings = {
   notifyTime: "09:00",
   level: "mid-senior",
   areas: [...AREA_IDS],
+  customAreas: [],
   stackProfile: ["React", "Jest"],
   model: "claude-opus-5-5",
   launchAtLogin: true,
@@ -83,6 +84,73 @@ describe("SettingsView", () => {
     expect(lastPut()).toEqual({ areas });
     expect(await screen.findByText(/15 of 16/)).toBeInTheDocument();
     expect(AREAS).toHaveLength(16);
+  });
+
+  describe("custom areas", () => {
+    const withCustom = (areas: string[]): PublicSettings => ({
+      ...initial,
+      customAreas: ["My area"],
+      areas,
+    });
+
+    async function expectAdded(add: () => Promise<unknown>): Promise<void> {
+      const areas = [...AREA_IDS, "My area"];
+      fetchMock().mockResolvedValue(ok({ ...initial, customAreas: ["My area"], areas }));
+      render(<SettingsView initial={initial} />);
+      await userEvent.type(screen.getByRole("textbox", { name: "New area" }), "  My area  ");
+      await add();
+      expect(lastPut()).toEqual({ customAreas: ["My area"], areas });
+      expect(await screen.findByRole("checkbox", { name: "My area" })).toBeChecked();
+      expect(await screen.findByText(/17 of 17/)).toBeInTheDocument();
+    }
+
+    it("adds with Enter", async () => {
+      await expectAdded(() => userEvent.keyboard("{Enter}"));
+    });
+
+    it("adds with the Add area button", async () => {
+      await expectAdded(() => userEvent.click(screen.getByRole("button", { name: "Add area" })));
+    });
+
+    it.each([
+      ["", "Type an area name."],
+      ["Next.js", "That area already exists."],
+      ["x".repeat(41), "Keep it under 40 characters."],
+    ])("rejects %p without saving", async (name, message) => {
+      render(<SettingsView initial={initial} />);
+      const input = screen.getByRole("textbox", { name: "New area" });
+      if (name) await userEvent.type(input, name);
+      await userEvent.click(screen.getByRole("button", { name: "Add area" }));
+      expect(screen.getByRole("alert")).toHaveTextContent(message);
+      expect(puts()).toHaveLength(0);
+    });
+
+    it("removes a custom area and its enabled entry", async () => {
+      fetchMock().mockResolvedValue(ok(initial));
+      render(<SettingsView initial={withCustom([...AREA_IDS, "My area"])} />);
+      await userEvent.click(screen.getByRole("button", { name: "Remove My area" }));
+      expect(lastPut()).toEqual({ customAreas: [], areas: [...AREA_IDS] });
+    });
+
+    it("the last enabled custom area can't be unchecked or removed", () => {
+      render(<SettingsView initial={withCustom(["My area"])} />);
+      expect(screen.getByRole("checkbox", { name: "My area" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Remove My area" })).toBeDisabled();
+      expect(screen.getByText("At least one area stays on.")).toBeInTheDocument();
+    });
+
+    it("saves toggles in built-ins-then-customs order", async () => {
+      fetchMock().mockResolvedValue(ok(withCustom(["My area"])));
+      const { unmount } = render(<SettingsView initial={withCustom(["security", "My area"])} />);
+      await userEvent.click(screen.getByRole("checkbox", { name: "Security" }));
+      expect(lastPut()).toEqual({ areas: ["My area"] });
+      unmount();
+
+      fetchMock().mockResolvedValue(ok(withCustom(["security", "My area"])));
+      render(<SettingsView initial={withCustom(["security"])} />);
+      await userEvent.click(screen.getByRole("checkbox", { name: "My area" }));
+      expect(lastPut()).toEqual({ areas: ["security", "My area"] });
+    });
   });
 
   it("the last area can't be unchecked", () => {
