@@ -71,8 +71,8 @@ function Loading({ dayKey }: { dayKey: string }): React.JSX.Element {
         <span className="ml-auto font-mono text-[11.5px] font-normal text-ink-faint">usually 10–20 s</span>
       </div>
       <div className="mt-9 flex flex-col gap-3.5">
-        {["62%", "48%", "70%", "54%"].map((w) => (
-          <div key={w} className="h-3.5 animate-pulse rounded bg-hover" style={{ width: w }} />
+        {["w-[62%]", "w-[48%]", "w-[70%]", "w-[54%]"].map((w) => (
+          <div key={w} data-skeleton className={`h-3.5 animate-pulse rounded bg-hover ${w}`} />
         ))}
       </div>
     </Frame>

@@ -40,9 +40,14 @@ beforeEach(() => {
 describe("TodayView", () => {
   it("shows the generating state while pending", () => {
     (global.fetch as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
-    render(<TodayView dayKey="2026-10-07" demo={false} />);
+    const { container } = render(<TodayView dayKey="2026-10-07" demo={false} />);
     expect(screen.getByText("Creating today's word")).toBeInTheDocument();
     expect(screen.getByText("Wed 7 Oct 2026")).toBeInTheDocument();
+    const lines = container.querySelectorAll("[data-skeleton]");
+    expect(Array.from(lines, (l) => l.className.match(/w-\[\d+%\]/)?.[0])).toEqual([
+      "w-[62%]", "w-[48%]", "w-[70%]", "w-[54%]",
+    ]);
+    lines.forEach((l) => expect(l).not.toHaveAttribute("style"));
   });
 
   it("shows the word on success", async () => {

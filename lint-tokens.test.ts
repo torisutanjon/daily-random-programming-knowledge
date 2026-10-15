@@ -30,3 +30,13 @@ it("accepts tailwind token", () => {
   });
   expect(result.status).toBe(0);
 }, 30000);
+
+it("rejects inline style props", () => {
+  const input = "export const C = () => <div style={{ width: 1 }} />;";
+  const result = spawnSync("node_modules/.bin/eslint", ["--stdin", "--stdin-filename", "app/sample.tsx"], {
+    input,
+    encoding: "utf8",
+  });
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain("no-restricted-syntax");
+}, 30000);

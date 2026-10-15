@@ -84,11 +84,9 @@ function Coverage({ rows, covered }: { rows: CoverageRow[]; covered: number }): 
             >
               <span className="truncate">{c.label}</span>
               <div className="h-[5px] overflow-hidden rounded-[3px] bg-active">
-                <div
-                  data-bar
-                  className="h-full rounded-[3px] bg-accent"
-                  style={{ width: `${c.percent}%` }}
-                />
+                <svg aria-hidden className="block h-full w-full">
+                  <rect data-bar width={`${c.percent}%`} height="100%" rx="3" className="fill-accent" />
+                </svg>
               </div>
               <span className="text-right font-mono text-[11.5px]">{c.count}</span>
             </div>
