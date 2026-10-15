@@ -118,10 +118,10 @@ describe("BacklogView", () => {
 
     const node = container.querySelector('[data-area="node-runtime"]');
     expect(node).toHaveTextContent("2");
-    expect(node?.querySelector("[data-bar]")).toHaveStyle({ width: "100%" });
+    expect(node?.querySelector("[data-bar]")).toHaveAttribute("width", "100%");
     expect(
       container.querySelector('[data-area="react-internals"] [data-bar]'),
-    ).toHaveStyle({ width: "50%" });
+    ).toHaveAttribute("width", "50%");
   });
 
   it("coverage header counts custom areas", () => {
