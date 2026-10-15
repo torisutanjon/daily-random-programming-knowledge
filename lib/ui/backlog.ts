@@ -1,4 +1,4 @@
-import { AREAS, type AreaId } from "@/lib/domain/areas";
+import { AREAS } from "@/lib/domain/areas";
 import { currentDayKey } from "@/lib/domain/day";
 import type { Settings } from "@/lib/domain/settings";
 import { wordProgress } from "@/lib/domain/status";
@@ -19,7 +19,7 @@ export interface BacklogRow {
 }
 
 export interface CoverageRow {
-  area: AreaId;
+  area: string;
   label: string;
   count: number;
   enabled: boolean;
@@ -28,7 +28,7 @@ export interface CoverageRow {
 
 export interface BacklogData {
   rows: BacklogRow[]; // past words only, newest first
-  coverage: CoverageRow[]; // all 16 areas, AREAS order
+  coverage: CoverageRow[]; // built-in areas in AREAS order, then custom areas
   covered: number; // areas with ≥ 1 word
 }
 
@@ -60,14 +60,15 @@ export function buildBacklog(words: readonly Word[], settings: Settings, now: Da
 
   const counts = new Map<string, number>();
   for (const word of words) counts.set(word.area, (counts.get(word.area) ?? 0) + 1);
-  const max = Math.max(0, ...AREAS.map((area) => counts.get(area.id) ?? 0));
-  const coverage = AREAS.map((area) => {
-    const count = counts.get(area.id) ?? 0;
+  const ids = [...AREAS.map((area) => area.id), ...settings.customAreas];
+  const max = Math.max(0, ...ids.map((id) => counts.get(id) ?? 0));
+  const coverage = ids.map((id) => {
+    const count = counts.get(id) ?? 0;
     return {
-      area: area.id,
-      label: area.label,
+      area: id,
+      label: areaLabel(id),
       count,
-      enabled: settings.areas.includes(area.id),
+      enabled: settings.areas.includes(id),
       percent: max ? (count / max) * 100 : 0,
     };
   });

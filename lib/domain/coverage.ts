@@ -1,7 +1,7 @@
-import { AREAS, type AreaId } from "./areas";
+import { AREAS } from "./areas";
 
 export interface AreaCount {
-  area: AreaId;
+  area: string;
   count: number;
 }
 
@@ -16,14 +16,14 @@ export function areaCounts(words: readonly { area: string }[]): AreaCount[] {
 
 /** Weighted-random area, favouring areas with the fewest past words (weight = 1 / (1 + count)). */
 export function pickArea(
-  history: readonly AreaId[],
-  enabledAreas: readonly AreaId[],
+  history: readonly string[],
+  enabledAreas: readonly string[],
   rng: () => number,
-): AreaId {
+): string {
   const areas = [...new Set(enabledAreas)];
   if (areas.length === 0) throw new Error("No enabled areas");
 
-  const counts = new Map<AreaId, number>();
+  const counts = new Map<string, number>();
   for (const area of history) counts.set(area, (counts.get(area) ?? 0) + 1);
 
   const weights = areas.map((area) => 1 / (1 + (counts.get(area) ?? 0)));

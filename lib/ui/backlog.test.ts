@@ -81,6 +81,19 @@ describe("buildBacklog coverage", () => {
     expect(data.covered).toBe(2);
   });
 
+  it("lists custom areas after the built-ins with their name as label", () => {
+    const settings = { ...defaultSettings(), customAreas: ["My area"], areas: [...defaultSettings().areas, "My area"] };
+    const data = build([inArea(makeWord("2026-10-07"), "My area")], settings);
+    expect(data.coverage).toHaveLength(AREAS.length + 1);
+    expect(data.coverage[data.coverage.length - 1]).toMatchObject({
+      area: "My area",
+      label: "My area",
+      count: 1,
+      enabled: true,
+    });
+    expect(data.covered).toBe(1);
+  });
+
   it("is all zero with no words", () => {
     const data = build([]);
     expect(data.rows).toEqual([]);
