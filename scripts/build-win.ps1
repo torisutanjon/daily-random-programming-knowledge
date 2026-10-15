@@ -9,6 +9,18 @@ $ErrorActionPreference = "Stop"
 robocopy $Source $Dest /MIR /XD node_modules .next .git dist dist-electron .data /XF ".env*" /NFL /NDL /NJH /NJS /NP
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
 
+# /MIR skips dist, so old installers would pile up; start each build empty.
+foreach ($dir in "dist", "dist-electron") {
+  $path = Join-Path $Dest $dir
+  if (Test-Path -LiteralPath $path) {
+    try {
+      Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction Stop
+    } catch {
+      throw "Could not clear $path - close drpk or wait for the antivirus scan, then retry. $_"
+    }
+  }
+}
+
 Push-Location $Dest
 try {
   corepack yarn install --frozen-lockfile
