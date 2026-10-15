@@ -14,6 +14,17 @@ describe("generationPrompt", () => {
       expect(all).toContain(part);
     }
   });
+
+  it("uses a custom area's name as its label", () => {
+    const { system, user } = generationPrompt({
+      area: "My area",
+      level: "mid",
+      stackProfile: ["React"],
+      pastTerms: [],
+    });
+    expect(system).toContain("My area");
+    expect(user).toContain("My area");
+  });
 });
 
 describe("gradingPrompt", () => {

@@ -132,6 +132,13 @@ describe("settings", () => {
     expect(await createRepo(dir).getSettings()).toEqual({ ...defaultSettings(), notifyTime: "07:30" });
   });
 
+  it("defaults customAreas to [] for a file without it", async () => {
+    await writeFile(settingsFile(), JSON.stringify({ areas: ["nextjs"] }));
+    const settings = await createRepo(dir).getSettings();
+    expect(settings.customAreas).toEqual([]);
+    expect(settings.areas).toEqual(["nextjs"]);
+  });
+
   it.each(["{not json", "[1,2]", "42"])("moves corrupt settings %p aside and uses defaults", async (content) => {
     jest.spyOn(console, "warn").mockImplementation(() => {});
     await writeFile(settingsFile(), content);

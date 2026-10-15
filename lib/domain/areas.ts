@@ -20,3 +20,13 @@ export const AREAS = [
 export type AreaId = (typeof AREAS)[number]["id"];
 
 export const AREA_IDS: AreaId[] = AREAS.map((area) => area.id);
+
+/** `name` is already trimmed. A user-facing message, or null when the name can be added. */
+export function customAreaError(name: string, others: readonly string[]): string | null {
+  if (name === "") return "Type an area name.";
+  if (name.length > 40) return "Keep it under 40 characters.";
+  const lower = name.toLowerCase();
+  const taken = [...AREAS.flatMap((area) => [area.id, area.label]), ...others];
+  if (taken.some((existing) => existing.toLowerCase() === lower)) return "That area already exists.";
+  return null;
+}

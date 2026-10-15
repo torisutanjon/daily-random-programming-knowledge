@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { AreaId } from "../domain/areas";
 import type { Level } from "../domain/types";
 
 export const MAX_QUESTIONS = 12;
@@ -41,7 +40,7 @@ export type GeneratedWord = z.infer<typeof generatedWordSchema>;
 export type Grade = z.infer<typeof gradeSchema>;
 
 export interface GenerateWordInput {
-  area: AreaId;
+  area: string;
   level: Level;
   stackProfile: string[];
   pastTerms: string[];

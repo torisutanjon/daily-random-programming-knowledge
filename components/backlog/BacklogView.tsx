@@ -70,7 +70,7 @@ function Coverage({ rows, covered }: { rows: CoverageRow[]; covered: number }): 
         <h2 id="coverage-title" className="text-sm font-semibold text-ink-strong">
           Coverage
         </h2>
-        <span className="font-mono text-[11.5px] text-ink-faint">{covered} of 16 areas</span>
+        <span className="font-mono text-[11.5px] text-ink-faint">{covered} of {rows.length} areas</span>
       </div>
       <div className="mt-3.5 flex flex-col gap-[9px]">
         {rows.map((c) => {

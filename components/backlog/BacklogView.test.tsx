@@ -124,6 +124,14 @@ describe("BacklogView", () => {
     ).toHaveStyle({ width: "50%" });
   });
 
+  it("coverage header counts custom areas", () => {
+    const base = makeData();
+    const custom = { area: "My area", label: "My area", count: 0, enabled: true, percent: 0 };
+    render(<BacklogView data={{ ...base, coverage: [...base.coverage, custom] }} />);
+    const region = screen.getByRole("region", { name: "Coverage" });
+    expect(within(region).getByText(/2 of 17 areas/)).toBeInTheDocument();
+  });
+
   it("first day empty state", () => {
     render(<BacklogView data={makeData({ rows: [] })} />);
     expect(screen.getByText("Your first day")).toBeInTheDocument();
