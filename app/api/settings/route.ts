@@ -64,14 +64,13 @@ export async function PUT(request: Request): Promise<Response> {
         const message = customAreaError(name, merged.customAreas.slice(0, i));
         if (message) return { error: message };
       }
-      const unknown = merged.areas.find((area) => !AREA_IDS.includes(area as never) && !merged.customAreas.includes(area));
+      const unknown = merged.areas.find((area) => !(AREA_IDS as readonly string[]).includes(area) && !merged.customAreas.includes(area));
       if (unknown !== undefined) return { error: `Unknown area: ${unknown}` };
       await repo.saveSettings(merged);
       return merged;
     });
     if ("error" in result) return errorResponse(400, "invalid_request", result.error);
-    const next = result;
-    return Response.json(toPublicSettings(next));
+    return Response.json(toPublicSettings(result));
   } catch (error) {
     return serverError(error);
   }
