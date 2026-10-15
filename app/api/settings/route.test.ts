@@ -126,6 +126,47 @@ describe("PUT /api/settings", () => {
     expect(await createRepo(dir).getSettings()).toEqual(seeded);
   });
 
+  it("saves custom areas and enables them", async () => {
+    const response = await put({ customAreas: ["My area"], areas: ["nextjs", "My area"] });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.customAreas).toEqual(["My area"]);
+    expect(body.areas).toEqual(["nextjs", "My area"]);
+    const after = await (await get()).json();
+    expect(after.customAreas).toEqual(["My area"]);
+    expect(after.areas).toEqual(["nextjs", "My area"]);
+  });
+
+  it("trims custom area names", async () => {
+    const response = await put({ customAreas: ["  My area  "], areas: ["My area"] });
+    expect(response.status).toBe(200);
+    expect((await response.json()).customAreas).toEqual(["My area"]);
+  });
+
+  it.each([
+    ["a name matching a built-in label case-insensitively", { customAreas: ["next.JS"], areas: ["nextjs"] }],
+    ["a name matching a built-in id", { customAreas: ["NextJS"], areas: ["nextjs"] }],
+    ["duplicate custom names case-insensitively", { customAreas: ["Foo", "foo"], areas: ["nextjs"] }],
+    ["a name over 40 chars", { customAreas: ["x".repeat(41)], areas: ["nextjs"] }],
+    ["a blank name", { customAreas: ["   "], areas: ["nextjs"] }],
+    ["an enabled area that is neither built-in nor custom", { areas: ["Not an area"] }],
+  ])("rejects %s and leaves settings unchanged", async (_name, body) => {
+    const before = await (await get()).json();
+    const response = await put(body);
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("invalid_request");
+    expect(await (await get()).json()).toEqual(before);
+  });
+
+  it("rejects removing a stored custom area while still enabled and leaves settings unchanged", async () => {
+    expect((await put({ customAreas: ["Foo"], areas: ["Foo"] })).status).toBe(200);
+    const before = await (await get()).json();
+    const response = await put({ customAreas: [] });
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("invalid_request");
+    expect(await (await get()).json()).toEqual(before);
+  });
+
   it("persists both fields of two concurrent PUTs", async () => {
     const { PUT } = await import("@/app/api/settings/route");
     await Promise.all([
