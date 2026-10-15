@@ -1,10 +1,11 @@
-import { AREA_IDS, type AreaId } from "./areas";
+import { AREA_IDS } from "./areas";
 import type { Level } from "./types";
 
 export interface Settings {
   notifyTime: string; // "HH:mm"
   level: Level;
-  areas: AreaId[]; // enabled areas
+  areas: string[]; // enabled: built-in ids + custom names
+  customAreas: string[];
   stackProfile: string[];
   apiKey: string | null; // null → demo mode (FakeProvider)
   model: string;
@@ -19,6 +20,7 @@ export function defaultSettings(): Settings {
     notifyTime: "09:00",
     level: "mid-senior",
     areas: [...AREA_IDS],
+    customAreas: [],
     stackProfile: [
       "TypeScript/JavaScript",
       "React",
@@ -41,11 +43,12 @@ export function defaultSettings(): Settings {
 
 /** Allowlist copy: the API key never leaves the server. */
 export function toPublicSettings(settings: Settings): PublicSettings {
-  const { notifyTime, level, areas, stackProfile, model, launchAtLogin, apiKey } = settings;
+  const { notifyTime, level, areas, customAreas, stackProfile, model, launchAtLogin, apiKey } = settings;
   return {
     notifyTime,
     level,
     areas: [...areas],
+    customAreas: [...customAreas],
     stackProfile: [...stackProfile],
     model,
     launchAtLogin,

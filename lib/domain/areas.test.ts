@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { AREA_IDS, AREAS } from "./areas";
+import { AREA_IDS, AREAS, customAreaError } from "./areas";
 
 describe("AREAS", () => {
   it("has 16 unique ids", () => {
@@ -28,5 +28,18 @@ describe("AREAS", () => {
       "CS fundamentals",
       "Engineering leadership & practices",
     ]);
+  });
+});
+
+describe("customAreaError", () => {
+  it.each([
+    ["", [], "Type an area name."],
+    ["x".repeat(41), [], "Keep it under 40 characters."],
+    ["next.JS", [], "That area already exists."],
+    ["NextJS", [], "That area already exists."],
+    ["foo", ["Foo"], "That area already exists."],
+    ["My area", [], null],
+  ])("%p with %p -> %p", (name, others, expected) => {
+    expect(customAreaError(name, others)).toBe(expected);
   });
 });
