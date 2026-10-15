@@ -1,4 +1,4 @@
-# Runs the verify gates from PROJECT.md (type-check, lint, test) on every PR
+# Runs the README's checks (type-check, lint, test) on every PR
 # and on pushes to develop and main.
 name: ci
 
