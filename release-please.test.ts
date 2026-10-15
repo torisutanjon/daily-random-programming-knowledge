@@ -34,4 +34,12 @@ describe("release-please", () => {
     const pkg = JSON.parse(read("package.json"));
     expect(manifest["."]).toBe(pkg.version);
   });
+
+  it("package.json, the manifest and the newest CHANGELOG entry agree on the version", () => {
+    const pkg = JSON.parse(read("package.json")).version;
+    const manifest = JSON.parse(read(".release-please-manifest.json"))["."];
+    const changelog = read("CHANGELOG.md").match(/^## \[(\d+\.\d+\.\d+)\]/m)?.[1];
+    expect(manifest).toBe(pkg);
+    expect(changelog).toBe(pkg);
+  });
 });
