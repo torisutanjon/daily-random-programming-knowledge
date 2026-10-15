@@ -239,7 +239,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
           ))}
           {draft.customAreas.map((name) => (
             <div key={name} className="flex items-center rounded-[5px] hover:bg-hover">
-              <label className="flex flex-1 items-center gap-2.5 px-1.5 py-1.5 text-sm text-ink">
+              <label className="flex min-w-0 flex-1 items-center gap-2.5 px-1.5 py-1.5 text-sm text-ink">
                 <input
                   type="checkbox"
                   className="accent-accent"
@@ -248,14 +248,14 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
                   aria-describedby={lastArea === name ? "last-area-hint" : undefined}
                   onChange={() => toggleArea(name)}
                 />
-                {name}
+                <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
               </label>
               <button
                 type="button"
                 aria-label={`Remove ${name}`}
                 disabled={lastArea === name}
                 onClick={() => removeArea(name)}
-                className="ml-auto mr-1.5 size-4 rounded-full text-[10px] text-ink-soft hover:bg-control-line hover:text-ink-bright disabled:opacity-40"
+                className="ml-auto mr-1.5 size-4 shrink-0 rounded-full text-[10px] text-ink-soft hover:bg-control-line hover:text-ink-bright disabled:opacity-40"
               >
                 ✕
               </button>
