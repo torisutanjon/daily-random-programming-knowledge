@@ -12,7 +12,7 @@ import {
 } from "electron";
 import { legacyLoginItemRemoval, loginItemSettings } from "./login-item";
 import { createScheduler, type Scheduler } from "./scheduler";
-import { getFreePort, standaloneServerPath, waitForServer } from "./server";
+import { getFreePort, SERVER_START_TIMEOUT_MS, standaloneServerPath, waitForServer } from "./server";
 
 const APP_ID = "com.drpk.app";
 
@@ -139,7 +139,7 @@ async function startServer(): Promise<string> {
   exited.catch(() => {}); // the later kill on quit must not surface as an unhandled rejection
 
   try {
-    await Promise.race([waitForServer(url, { timeoutMs: 20000, intervalMs: 200 }), exited]);
+    await Promise.race([waitForServer(url, { timeoutMs: SERVER_START_TIMEOUT_MS, intervalMs: 200 }), exited]);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     dialog.showErrorBox("drpk", `Couldn't start the app server: ${message}`);
