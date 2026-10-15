@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AREAS } from "@/lib/domain/areas";
+import { AREA_IDS, AREAS, customAreaError } from "@/lib/domain/areas";
 import type { PublicSettings } from "@/lib/domain/settings";
 import type { Level } from "@/lib/domain/types";
 
@@ -64,6 +64,8 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
   const [draft, setDraft] = useState<PublicSettings>(initial);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [newTag, setNewTag] = useState("");
+  const [newArea, setNewArea] = useState("");
+  const [areaError, setAreaError] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState("");
   const [keyTest, setKeyTest] = useState<KeyTest>({ kind: "idle" });
   const savedRef = useRef(initial);
@@ -112,11 +114,31 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
     save({ stackProfile: [...draft.stackProfile, tag] });
   }
 
-  function toggleArea(id: (typeof AREAS)[number]["id"]): void {
+  function addArea(): void {
+    const name = newArea.trim();
+    const message = customAreaError(name, draft.customAreas);
+    if (message) {
+      setAreaError(message);
+      return;
+    }
+    setNewArea("");
+    setAreaError(null);
+    save({ customAreas: [...draft.customAreas, name], areas: [...draft.areas, name] });
+  }
+
+  function removeArea(name: string): void {
+    if (lastArea === name) return;
+    save({
+      customAreas: draft.customAreas.filter((a) => a !== name),
+      areas: draft.areas.filter((a) => a !== name),
+    });
+  }
+
+  function toggleArea(id: string): void {
     const on = draft.areas.includes(id);
     if (on && draft.areas.length === 1) return;
     save({
-      areas: AREAS.map((a) => a.id).filter((a) => (a === id ? !on : draft.areas.includes(a))),
+      areas: [...AREA_IDS, ...draft.customAreas].filter((a) => (a === id ? !on : draft.areas.includes(a))),
     });
   }
 
@@ -200,7 +222,7 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
         </div>
       </Row>
       <Row title="Areas" help="Words are drawn from these." stacked>
-        <div className="mt-1 font-mono text-xs text-ink-faint">{draft.areas.length} of {AREAS.length}</div>
+        <div className="mt-1 font-mono text-xs text-ink-faint">{draft.areas.length} of {AREAS.length + draft.customAreas.length}</div>
         <div className="mt-3.5 grid grid-cols-1 gap-x-5 gap-y-1 @xl:grid-cols-2">
           {AREAS.map((a) => (
             <label key={a.id} className="flex items-center gap-2.5 rounded-[5px] px-1.5 py-1.5 text-sm text-ink hover:bg-hover">
@@ -215,7 +237,59 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
               {a.label}
             </label>
           ))}
+          {draft.customAreas.map((name) => (
+            <div key={name} className="flex items-center rounded-[5px] hover:bg-hover">
+              <label className="flex flex-1 items-center gap-2.5 px-1.5 py-1.5 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="accent-accent"
+                  checked={draft.areas.includes(name)}
+                  disabled={lastArea === name}
+                  aria-describedby={lastArea === name ? "last-area-hint" : undefined}
+                  onChange={() => toggleArea(name)}
+                />
+                {name}
+              </label>
+              <button
+                type="button"
+                aria-label={`Remove ${name}`}
+                disabled={lastArea === name}
+                onClick={() => removeArea(name)}
+                className="ml-auto mr-1.5 size-4 rounded-full text-[10px] text-ink-soft hover:bg-control-line hover:text-ink-bright disabled:opacity-40"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
+        <div className="mt-3 flex gap-2">
+          <input
+            aria-label="New area"
+            placeholder="New area…"
+            value={newArea}
+            onChange={(e) => {
+              setNewArea(e.target.value);
+              setAreaError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addArea();
+              }
+            }}
+            aria-invalid={areaError !== null}
+            aria-describedby={areaError ? "area-error" : undefined}
+            className={`${INPUT} min-w-0 flex-1 font-sans text-sm`}
+          />
+          <button type="button" onClick={addArea} className={BUTTON}>
+            Add area
+          </button>
+        </div>
+        {areaError && (
+          <div id="area-error" role="alert" className="mt-2 text-[13px] text-fail">
+            {areaError}
+          </div>
+        )}
         {lastArea && <div id="last-area-hint" className="mt-2 text-[13px] text-ink-soft">At least one area stays on.</div>}
       </Row>
       <Row title="Stack" help="Examples and questions lean on these." stacked>
