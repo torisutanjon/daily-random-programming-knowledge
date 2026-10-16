@@ -4,7 +4,7 @@
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { getFreePort, standaloneServerPath, waitForServer } from "./server";
+import { getFreePort, SERVER_START_TIMEOUT_MS, standaloneServerPath, waitForServer } from "./server";
 
 describe("getFreePort", () => {
   it("returns a port that can be bound", async () => {
@@ -51,5 +51,11 @@ describe("standaloneServerPath", () => {
     expect(standaloneServerPath("/res", false, "/app")).toBe(
       path.join("/app", ".next", "standalone", "server.js"),
     );
+  });
+});
+
+describe("SERVER_START_TIMEOUT_MS", () => {
+  it("leaves room for a slow cold-boot start at login", () => {
+    expect(SERVER_START_TIMEOUT_MS).toBeGreaterThanOrEqual(90_000);
   });
 });
