@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/torisutanjon/daily-random-programming-knowledge/compare/v1.2.0...v1.2.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* DRPK-024 - wait up to 90 s for the app server at login ([#34](https://github.com/torisutanjon/daily-random-programming-knowledge/issues/34)) ([0e9de2e](https://github.com/torisutanjon/daily-random-programming-knowledge/commit/0e9de2eef420036c8dba7195dbc10957e14c78c9))
+
 ## [1.2.0](https://github.com/torisutanjon/daily-random-programming-knowledge/compare/v1.1.0...v1.2.0) (2026-10-15)
 
 
