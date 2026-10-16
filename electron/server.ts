@@ -1,6 +1,9 @@
 import net from "node:net";
 import path from "node:path";
 
+// Cold boot at login is slow (Defender scans + disk contention); 20 s timed out there.
+export const SERVER_START_TIMEOUT_MS = 90_000;
+
 export function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
