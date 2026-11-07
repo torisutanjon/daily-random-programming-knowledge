@@ -275,6 +275,21 @@ describe("SettingsView", () => {
     expect(lastPut()).toEqual({ launchAtLogin: false });
   });
 
+  it("Use Claude Code switch saves", async () => {
+    fetchMock().mockResolvedValue(ok({ ...initial, useClaudeCode: true }));
+    render(<SettingsView initial={initial} />);
+    const sw = screen.getByRole("switch", { name: "Use Claude Code" });
+    expect(sw).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(sw);
+    expect(lastPut()).toEqual({ useClaudeCode: true });
+    expect(sw).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("the key status says it is unused while Claude Code is on", () => {
+    render(<SettingsView initial={{ ...initial, useClaudeCode: true, hasApiKey: true }} />);
+    expect(screen.getByText("Claude Code is on — the key isn't used.")).toBeInTheDocument();
+  });
+
   it("a failed save reverts and says so", async () => {
     fetchMock().mockResolvedValue(
       fail(500, { error: { code: "internal", message: "x" } }),
