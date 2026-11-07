@@ -80,6 +80,13 @@ describe("PUT /api/settings", () => {
     expect(stored.stackProfile).toEqual(defaults.stackProfile);
   });
 
+  it("PUT useClaudeCode persists and GET returns it", async () => {
+    const response = await put({ useClaudeCode: true });
+    expect(response.status).toBe(200);
+    expect((await response.json()).useClaudeCode).toBe(true);
+    expect((await (await get()).json()).useClaudeCode).toBe(true);
+  });
+
   it("clears the api key when given null", async () => {
     await put({ apiKey: "sk-test" });
     const response = await put({ apiKey: null });
@@ -116,6 +123,7 @@ describe("PUT /api/settings", () => {
     ["blank stackProfile entry", { stackProfile: ["  "] }],
     ["empty model", { model: "" }],
     ["non-boolean launchAtLogin", { launchAtLogin: "yes" }],
+    ["non-boolean useClaudeCode", { useClaudeCode: "yes" }],
     ["unknown key", { foo: 1 }],
   ])("returns 400 invalid_request for %s", async (_name, body) => {
     await put({ apiKey: "sk-test", level: "senior" });
