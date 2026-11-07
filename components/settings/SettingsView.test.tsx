@@ -19,6 +19,7 @@ const initial: PublicSettings = {
   stackProfile: ["React", "Jest"],
   model: "claude-opus-5-5",
   launchAtLogin: true,
+  useClaudeCode: false,
   hasApiKey: false,
 };
 
