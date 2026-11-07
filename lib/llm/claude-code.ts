@@ -43,6 +43,9 @@ export function runClaude(args: string[], stdin: string, command = "claude"): Pr
 }
 
 export function claudeArgs(model: string, system: string, schema: z.ZodType): string[] {
+  // The CLI rejects the draft 2020-12 `$schema` URI that zod emits.
+  const jsonSchema: Record<string, unknown> = { ...z.toJSONSchema(schema) };
+  delete jsonSchema.$schema;
   return [
     "-p",
     "--output-format",
@@ -58,7 +61,7 @@ export function claudeArgs(model: string, system: string, schema: z.ZodType): st
     "--system-prompt",
     system,
     "--json-schema",
-    JSON.stringify(z.toJSONSchema(schema)),
+    JSON.stringify(jsonSchema),
   ];
 }
 

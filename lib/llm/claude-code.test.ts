@@ -2,7 +2,7 @@
 import { ProviderError } from "./errors";
 import { claudeArgs, createClaudeCodeProvider, readEnvelope, runClaude, type RunClaude } from "./claude-code";
 import { generationPrompt, gradingPrompt } from "./prompts";
-import { generatedWordSchema, type GenerateWordInput, type GradeAnswerInput } from "./types";
+import { generatedWordSchema, gradeSchema, type GenerateWordInput, type GradeAnswerInput } from "./types";
 
 const genInput: GenerateWordInput = { area: "databases", level: "mid-senior", stackProfile: ["React"], pastTerms: [] };
 const gradeInput: GradeAnswerInput = { prompt: "Why?", rubric: ["a"], answer: "b" };
@@ -69,6 +69,14 @@ describe("claudeArgs", () => {
     expect(schema.type).toBe("object");
     expect(schema.properties.topics).toBeDefined();
   });
+});
+
+it.each([
+  ["generatedWordSchema", generatedWordSchema],
+  ["gradeSchema", gradeSchema],
+])("the --json-schema arg has no $schema key (the CLI rejects draft 2020-12): %s", (_name, schema) => {
+  const parsed = JSON.parse(pairs(claudeArgs("m", "s", schema), "--json-schema") as string);
+  expect(parsed).not.toHaveProperty("$schema");
 });
 
 describe("readEnvelope", () => {
