@@ -13,6 +13,7 @@ const patchSchema = z.strictObject({
   apiKey: z.string().trim().min(1).nullable().optional(), // null clears → demo mode
   model: z.string().trim().min(1).optional(),
   launchAtLogin: z.boolean().optional(),
+  useClaudeCode: z.boolean().optional(),
 });
 
 // Partial saves are read-merge-write; one chain per server process so concurrent saves don't drop fields.

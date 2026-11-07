@@ -325,9 +325,27 @@ export default function SettingsView({ initial }: { initial: PublicSettings }): 
       </Row>
 
       <Section title="AI grading" />
+      <Row title="Use Claude Code" help="Personal use. Uses your local Claude Code login.">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={draft.useClaudeCode}
+          aria-label="Use Claude Code"
+          onClick={() => save({ useClaudeCode: !draft.useClaudeCode })}
+          className={`relative h-5 w-9 rounded-full ${draft.useClaudeCode ? "bg-accent" : "bg-control-line"}`}
+        >
+          <span
+            className={`absolute top-0.5 size-4 rounded-full bg-ink-bright ${draft.useClaudeCode ? "left-[18px]" : "left-0.5"}`}
+          />
+        </button>
+      </Row>
       <Row title="API key" help="Stored locally on this computer." stacked>
         <div className="mt-2 text-[13px] text-ink-soft">
-          {draft.hasApiKey ? "A key is saved." : "No key — the app runs in demo mode."}
+          {draft.useClaudeCode
+            ? "Claude Code is on — the key isn't used."
+            : draft.hasApiKey
+              ? "A key is saved."
+              : "No key — the app runs in demo mode."}
         </div>
         <div className="mt-3 flex gap-2">
           <input

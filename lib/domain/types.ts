@@ -33,5 +33,5 @@ export interface Word {
   level: Level;
   topics: Topic[]; // 4–8
   createdAt: string; // ISO
-  provider: "anthropic" | "fake";
+  provider: "anthropic" | "claude-code" | "fake";
 }

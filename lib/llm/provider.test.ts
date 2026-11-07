@@ -12,4 +12,13 @@ describe("getProvider", () => {
     const provider = getProvider({ ...defaultSettings(), apiKey: "k" });
     expect(provider.name).toBe("anthropic");
   });
+
+  it("returns claude-code provider when useClaudeCode is on, even with an apiKey", () => {
+    const provider = getProvider({ ...defaultSettings(), apiKey: "k", useClaudeCode: true });
+    expect(provider.name).toBe("claude-code");
+  });
+
+  it("defaults useClaudeCode to false", () => {
+    expect(defaultSettings().useClaudeCode).toBe(false);
+  });
 });

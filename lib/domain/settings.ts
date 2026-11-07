@@ -10,6 +10,7 @@ export interface Settings {
   apiKey: string | null; // null → demo mode (FakeProvider)
   model: string;
   launchAtLogin: boolean;
+  useClaudeCode: boolean; // on → local Claude Code CLI, takes priority over apiKey
 }
 
 export type PublicSettings = Omit<Settings, "apiKey"> & { hasApiKey: boolean };
@@ -38,12 +39,13 @@ export function defaultSettings(): Settings {
     apiKey: null,
     model: "claude-opus-5-5",
     launchAtLogin: true,
+    useClaudeCode: false,
   };
 }
 
 /** Allowlist copy: the API key never leaves the server. */
 export function toPublicSettings(settings: Settings): PublicSettings {
-  const { notifyTime, level, areas, customAreas, stackProfile, model, launchAtLogin, apiKey } = settings;
+  const { notifyTime, level, areas, customAreas, stackProfile, model, launchAtLogin, useClaudeCode, apiKey } = settings;
   return {
     notifyTime,
     level,
@@ -52,6 +54,7 @@ export function toPublicSettings(settings: Settings): PublicSettings {
     stackProfile: [...stackProfile],
     model,
     launchAtLogin,
+    useClaudeCode,
     hasApiKey: apiKey !== null,
   };
 }

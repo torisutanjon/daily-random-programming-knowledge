@@ -1,4 +1,4 @@
-export type ProviderFailure = "auth" | "unavailable" | "rejected" | "refused";
+export type ProviderFailure = "auth" | "unavailable" | "rejected" | "refused" | "cli_missing" | "cli_auth";
 
 export class ProviderError extends Error {
   readonly reason: ProviderFailure;
@@ -16,4 +16,12 @@ export const PROVIDER_ERRORS: Record<ProviderFailure, { code: string; message: s
   unavailable: { code: "provider_unavailable", message: "Claude is unavailable right now — try again." },
   rejected: { code: "provider_rejected", message: "Claude rejected the request — check the model in Settings." },
   refused: { code: "refused", message: "Claude declined this request — try again." },
+  cli_missing: {
+    code: "claude_code_missing",
+    message: "Claude Code isn't installed — install it, then run `claude` once to log in.",
+  },
+  cli_auth: {
+    code: "claude_code_login",
+    message: "Claude Code isn't logged in — run `claude` in a terminal and log in.",
+  },
 };
